@@ -47,7 +47,15 @@ class ARKZilla(QObject):
 
         self.__loadSettings()
 
+        self.thread = QThread()
+        self.loader = Loader(**self.__settings)
+        self.loader.testResult.connect(self.testResult)
+        self.loader.moveToThread(self.thread)
+        self.startTest.connect(self.loader.testConnection)
+        self.thread.start()
+
     testResult = pyqtSignal(bool, arguments=['testResult'])
+    startTest = pyqtSignal()
 
     def __loadSettings(self):
         settings = QSettings(COMPANY, sys.argv[0])
@@ -63,12 +71,7 @@ class ARKZilla(QObject):
 
     @pyqtSlot()
     def testConnection(self):
-        self.thread = QThread()
-        self.loader = Loader(**self.__settings)
-        self.loader.testResult.connect(self.testResult)
-        self.thread.started.connect(self.loader.testConnection)
-        self.loader.moveToThread(self.thread)
-        self.thread.start()
+        self.startTest.emit()
 
 
 if __name__ == "__main__":
