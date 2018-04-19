@@ -1,11 +1,13 @@
 #!/usr/bin/env python3.5
 # -*- coding: utf-8 -*-
 import sys
+import traceback
 import os
 
 from PyQt5.QtGui import QGuiApplication
 from PyQt5.QtQml import QQmlApplicationEngine
-from PyQt5.QtCore import QObject, QThread, QSettings, pyqtSignal, pyqtSlot
+from PyQt5.QtCore import QObject, QRunnable, QThreadPool, QSettings
+from PyQt5.QtCore import pyqtSignal, pyqtSlot, pyqtProperty
 
 from ftplib import FTP
 
@@ -13,65 +15,161 @@ from ftplib import FTP
 COMPANY = 'ARKZilla'
 
 
-class Loader(QObject):
+class Worker(QRunnable):
+    '''
+    Worker thread
 
-    def __init__(self, host, login, password, remotePath, parent=None):
-        super().__init__(parent)
+    Inherits from QRunnable to handler worker thread setup, signals and wrap-up.
 
-        self.__host = host
-        self.__login = login
-        self.__password = password
-        self.__remotePath = remotePath
+    :param callback: The function callback to run on this worker thread. Supplied args and
+                     kwargs will be passed through to the runner.
+    :type callback: function
+    :param args: Arguments to pass to the callback function
+    :param kwargs: Keywords to pass to the callback function
 
-    testResult = pyqtSignal(bool, arguments=['testResult'])
+    '''
+
+    def __init__(self, fn, *args, **kwargs):
+        super(Worker, self).__init__()
+
+        # Store constructor arguments (re-used for processing)
+        self.fn = fn
+        self.args = args
+        self.kwargs = kwargs
+        self.signals = WorkerSignals()
+
+        # Add the callback to our kwargs
+        kwargs['progress_callback'] = self.signals.progress
 
     @pyqtSlot()
-    def testConnection(self):
+    def run(self):
+        '''
+        Initialise the runner function with passed args, kwargs.
+        '''
+
+        # Retrieve args/kwargs here; and fire processing using them
+        try:
+            result = self.fn(*self.args, **self.kwargs)
+        except Exception:
+            traceback.print_exc()
+            exctype, value = sys.exc_info()[:2]
+            self.signals.error.emit((exctype, value, traceback.format_exc()))
+        else:
+            self.signals.result.emit(result)  # Return the result of the processing
+        finally:
+            self.signals.finished.emit()  # Done
+
+
+class WorkerSignals(QObject):
+    '''
+    Defines the signals available from a running worker thread.
+
+    Supported signals are:
+
+    finished
+        No data
+
+    error
+        `tuple` (exctype, value, traceback.format_exc() )
+
+    result
+        `object` data returned from processing, anything
+
+    progress
+        `int` indicating % progress
+
+    '''
+    finished = pyqtSignal()
+    error = pyqtSignal(tuple)
+    result = pyqtSignal([bool], [object])
+    progress = pyqtSignal(int)
+
+
+class Client(QObject):
+
+    def __init__(self):
+        super(Client, self).__init__()
+
+    def testConnection(self, progress_callback, host, login, password):
+        '''
+        Test Connection
+        '''
         ftp = FTP()
         try:
-            ftp.connect(self.__host, timeout=5)
-            result = ftp.login(user=self.__login, passwd=self.__password)
+            ftp.connect(host, timeout=5)
+            result = ftp.login(user=login, passwd=password)
             print(result)
-            self.testResult.emit(True)
-        except Exception as err:
-            print('error connect: {}'.format(str(err)))
-            self.testResult.emit(False)
+        except Exception:
+            result = False
+        else:
+            result = True
         finally:
             ftp.close()
+            return result
 
 
 class ARKZilla(QObject):
-
-    def __init__(self, parent=None):
-        super().__init__(parent)
-
-        self.__loadSettings()
-
-        self.thread = QThread()
-        self.loader = Loader(**self.__settings)
-        self.loader.testResult.connect(self.testResult)
-        self.loader.moveToThread(self.thread)
-        self.startTest.connect(self.loader.testConnection)
-        self.thread.start()
+    '''
+    Main class
+    '''
 
     testResult = pyqtSignal(bool, arguments=['testResult'])
-    startTest = pyqtSignal()
 
-    def __loadSettings(self):
-        settings = QSettings(COMPANY, sys.argv[0])
-        self.__settings = dict()
-        self.__settings['host'] = settings.value('host', type=str)
-        self.__settings['login'] = settings.value('login', 'anonymous', type=str)
-        self.__settings['password'] = settings.value('password', type=str)
-        self.__settings['remotePath'] = settings.value('remotePath', '/', type=str)
+    def __init__(self):
+        super(ARKZilla, self).__init__()
 
-    @pyqtSlot()
-    def settingsChanged(self):
-        self.loadSettings()
+        self.__settings = QSettings(COMPANY, sys.argv[0])
 
-    @pyqtSlot()
-    def testConnection(self):
-        self.startTest.emit()
+        self.__threadpool = QThreadPool()
+        print("Multithreading with maximum %d threads" % self.__threadpool.maxThreadCount())
+
+        self.__client = Client()
+
+    @pyqtProperty(str, constant=True)
+    def host(self):
+        return self.__settings.value('host')
+
+    @host.setter
+    def host(self, value):
+        self.__settings.setValue('host', value)
+
+    @pyqtProperty(str, constant=True)
+    def login(self):
+        return self.__settings.value('login', 'anonymous')
+
+    @login.setter
+    def login(self, value):
+        self.__settings.setValue('login', value)
+
+    @pyqtProperty(str, constant=True)
+    def password(self):
+        return self.__settings.value('password')
+
+    @password.setter
+    def password(self, value):
+        self.__settings.setValue('password', value)
+
+    @pyqtProperty(str, constant=True)
+    def remotePath(self):
+        return self.__settings.value('remotePath', '/')
+
+    @remotePath.setter
+    def remotePath(self, value):
+        self.__settings.setValue('remotePath', value)
+
+    @pyqtSlot(str, str, str)
+    def testConnection(self, host, login, password):
+        worker = Worker(self.__client.testConnection,
+                        host=host,
+                        login=login,
+                        password=password
+                        )
+        worker.signals.result[bool].connect(self.testResult)
+        worker.signals.error.connect(self.testError)
+        self.__threadpool.start(worker)
+
+    def testError(self, s):
+        print(s)
 
 
 if __name__ == "__main__":

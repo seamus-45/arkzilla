@@ -1,18 +1,15 @@
 import QtQuick 2.6
 import QtQuick.Controls 2.2
 import QtQuick.Layouts 1.3
-import Qt.labs.settings 1.0
 
 Pane {
     anchors.fill: parent
 
-    Settings {
-        id: settings
-        property alias host: host.text
-        property alias login: login.text
-        property alias password: password.text
-        property alias remotePath: remotePath.text
-        property alias enableSSL: enableSSL.position
+    function saveSettings() {
+        arkzilla.host = host.text
+        arkzilla.login = login.text
+        arkzilla.password = storePass.checked ? password.text : ''
+        arkzilla.remotePath = remotePath.text
     }
 
     GridLayout {
@@ -25,6 +22,7 @@ Pane {
         }
         TextField {
             id: host
+            text: arkzilla.host
             placeholderText: qsTr("example.org")
             selectByMouse: true
             Layout.minimumWidth: 400
@@ -34,6 +32,7 @@ Pane {
         }
         TextField {
             id: login
+            text: arkzilla.login
             placeholderText: qsTr("anonymous")
             selectByMouse: true
             Layout.minimumWidth: 400
@@ -43,6 +42,7 @@ Pane {
         }
         TextField {
             id: password
+            text: arkzilla.password
             placeholderText: qsTr("password")
             selectByMouse: true
             echoMode: TextInput.Password
@@ -70,6 +70,7 @@ Pane {
         }
         TextField {
             id: remotePath
+            text: arkzilla.remotePath
             placeholderText: qsTr("/SavedArks")
             selectByMouse: true
             Layout.minimumWidth: 400
@@ -80,11 +81,26 @@ Pane {
             Layout.alignment: Qt.AlignLeft
             enabled: false
         }
-        Button {
-            text: qsTr("Test connection")
+        RowLayout {
+            Layout.fillWidth: true
+            Layout.columnSpan: 2
             Layout.alignment: Qt.AlignRight
-            onClicked: {
-                arkzilla.testConnection()
+            Button {
+                id: testConnection
+                text: qsTr("Test connection")
+                Layout.alignment: Qt.AlignRight
+                onClicked: {
+                    testInProgress.running = true
+                    testConnection.contentItem.visible = false
+                    arkzilla.testConnection(host.text, login.text, password.text)
+                }
+                BusyIndicator {
+                    id: testInProgress
+                    running: false
+                    implicitHeight: parent.height * 0.75
+                    implicitWidth: parent.width * 0.75
+                    anchors.centerIn: parent
+                }
             }
         }
         RowLayout {
@@ -98,8 +114,7 @@ Pane {
                         host.focus = true
                         return
                     }
-                    if (!storePass.checked)
-                        settings.password = ''
+                    saveSettings()
                 }
             }
             Button {
@@ -109,14 +124,16 @@ Pane {
         }
 
         Component.onCompleted: {
-            if (settings.password.length > 0)
-                storePass.checked = true
+            storePass.checked = password.length
         }
 
         Connections {
             target: arkzilla
 
             onTestResult: {
+                testInProgress.running = false
+                //testConnection.background.color = testResult ? '#0f0' : '#f00'
+                testConnection.contentItem.visible = true
                 console.log('test result: ' + testResult)
             }
         }
