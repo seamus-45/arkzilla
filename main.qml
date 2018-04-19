@@ -49,4 +49,9 @@ ApplicationWindow {
         anchors.fill: parent
         SettingsUI {}
     }
+
+    ToastManager {
+        id: toast
+    }
+
 }

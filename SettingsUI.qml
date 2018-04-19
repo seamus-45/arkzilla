@@ -1,5 +1,6 @@
 import QtQuick 2.6
 import QtQuick.Controls 2.2
+import QtQuick.Controls.Material 2.2
 import QtQuick.Layouts 1.3
 
 Pane {
@@ -132,10 +133,19 @@ Pane {
 
             onTestResult: {
                 testInProgress.running = false
-                //testConnection.background.color = testResult ? '#0f0' : '#f00'
                 testConnection.contentItem.visible = true
-                console.log('test result: ' + testResult)
+                if (testResult) {
+                    toast.show(
+                        qsTr('Connection successful'),
+                        Material.color(Material.Green).toString()
+                    )
+                } else {
+                    toast.show(
+                        qsTr('Connection fail'),
+                        Material.color(Material.Red).toString()
+                    )
+                }
             }
         }
     }
-} 
+}
