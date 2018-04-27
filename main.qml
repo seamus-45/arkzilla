@@ -12,11 +12,12 @@ ApplicationWindow {
 
     title: qsTr("ARKZilla")
 
-    Material.theme: Material.Dark
+    Material.theme: Material.Light
     Material.primary: Material.LightGreen
     Material.accent: Material.Green
+    Material.elevation: 6
 
-    FontLoader { id: faRegular; source: "fonts/fa-regular-400.ttf"}
+    FontLoader { id: faSolid; source: "fonts/fa-solid-900.ttf"}
 
     font.pixelSize: 18
 
@@ -38,6 +39,7 @@ ApplicationWindow {
             IconButton {
                 text: ""
                 onClicked: {
+                    passUI.open()
                 }
             }
         }
@@ -48,10 +50,18 @@ ApplicationWindow {
         initialItem: SettingsUI
         anchors.fill: parent
         SettingsUI {}
+        FtpManagerUI {}
+        onCompleted:{
+            stackWindow.pop()
+        }
     }
 
     ToastManager {
         id: toast
+    }
+
+    PassUI {
+        id: passUI
     }
 
 }

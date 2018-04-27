@@ -28,7 +28,7 @@ ListView {
       */
 
     readonly property real defaultDuration: 3000
-    readonly property color defaultColor: '#222222'
+    readonly property string defaultColor: '#222222'
 
     id: root
 

@@ -11,6 +11,7 @@ Pane {
         arkzilla.login = login.text
         arkzilla.password = storePass.checked ? password.text : ''
         arkzilla.remotePath = remotePath.text
+        toast.show(qsTr('Settings saved'))
     }
 
     GridLayout {
@@ -91,6 +92,10 @@ Pane {
                 text: qsTr("Test connection")
                 Layout.alignment: Qt.AlignRight
                 onClicked: {
+                    if (!host.length) {
+                        host.focus = true
+                        return
+                    }
                     testInProgress.running = true
                     testConnection.contentItem.visible = false
                     arkzilla.testConnection(host.text, login.text, password.text)
@@ -111,11 +116,7 @@ Pane {
             Button {
                 text: qsTr("Save")
                 onClicked: {
-                    if (!host.length) {
-                        host.focus = true
-                        return
-                    }
-                    saveSettings()
+                    host.length ? saveSettings() : host.focus = true
                 }
             }
             Button {
