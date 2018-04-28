@@ -39,7 +39,7 @@ ApplicationWindow {
             IconButton {
                 text: ""
                 onClicked: {
-                    passUI.open()
+                    stackWindow.push(settingsUI)
                 }
             }
         }
@@ -47,21 +47,19 @@ ApplicationWindow {
 
     StackView {
         id: stackWindow
-        initialItem: SettingsUI
         anchors.fill: parent
-        SettingsUI {}
-        FtpManagerUI {}
-        onCompleted:{
-            stackWindow.pop()
+
+        Component.onCompleted: {
+            stackWindow.push(ftpManagerUI)
+            if (!arkzilla.host.length) {
+                stackWindow.push(settingsUI)
+            }
         }
     }
 
-    ToastManager {
-        id: toast
-    }
+    property Component ftpManagerUI: FtpManagerUI {}
+    property Component settingsUI: SettingsUI {}
 
-    PassUI {
-        id: passUI
-    }
-
+    PassUI { id: passUI }
+    ToastManager { id: toast  }
 }

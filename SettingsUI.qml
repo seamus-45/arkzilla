@@ -4,13 +4,15 @@ import QtQuick.Controls.Material 2.2
 import QtQuick.Layouts 1.3
 
 Pane {
-    anchors.fill: parent
-
     function saveSettings() {
+        arkzilla.storePass = storePass.checked
+
         arkzilla.host = host.text
         arkzilla.login = login.text
-        arkzilla.password = storePass.checked ? password.text : ''
+        arkzilla.password = password.text
         arkzilla.remotePath = remotePath.text
+
+        stackWindow.pop()
         toast.show(qsTr('Settings saved'))
     }
 
@@ -56,16 +58,7 @@ Pane {
             text: qsTr("Remember password")
             Layout.alignment: Qt.AlignRight
             Layout.columnSpan: 2
-        }
-        RowLayout {
-            Layout.alignment: Qt.AlignRight
-            Layout.columnSpan: 2
-            Label {
-                text: qsTr("WARNING! Password will be stored as the plain text.")
-                visible:  storePass.checked
-                color: "#f00"
-                font.pixelSize: 16
-            }
+            onClicked: if (checked) { toast.show(qsTr('WARNING! Password will be stored in clear text!'), Material.color(Material.Red).toString(), 10000) }
         }
         Label {
             text: qsTr("Remote path:")
@@ -126,26 +119,27 @@ Pane {
         }
 
         Component.onCompleted: {
-            storePass.checked = password.length
+            storePass.checked = arkzilla.storePass
+            host.forceActiveFocus()
         }
 
         Connections {
             target: arkzilla
 
-            onTestResult: {
+            onConnectionSuccess: {
                 testInProgress.running = false
                 testConnection.contentItem.visible = true
-                if (testResult) {
-                    toast.show(
-                        qsTr('Connection successful'),
-                        Material.color(Material.Green).toString()
-                    )
-                } else {
-                    toast.show(
-                        qsTr('Connection fail'),
-                        Material.color(Material.Red).toString()
-                    )
+                if (success) {
+                    toast.show(qsTr('Connection successful'),
+                               Material.color(Material.Green).toString())
                 }
+            }
+
+            onConnectionError: {
+                testInProgress.running = false
+                testConnection.contentItem.visible = true
+                toast.show(qsTr('Connection fail: ' + error),
+                           Material.color(Material.Red).toString())
             }
         }
     }

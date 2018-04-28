@@ -5,7 +5,6 @@ import QtQuick.Layouts 1.3
 import QtGraphicalEffects 1.0
 
 Pane {
-    anchors.fill: parent
     padding: 0
 
     FastBlur {
@@ -50,7 +49,12 @@ Pane {
                 visible: (ftpView.count == 0 && ftpView.loading == false) ? true : false
             }
 
-            onDragEnded: if(refreshHeader.refresh) {ftpView.loading = true}
+            onDragEnded: {
+                if (refreshHeader.refresh) {
+                    ftpView.loading = true
+                    arkzilla.listRemote()
+                }
+            }
         }
     }
 
