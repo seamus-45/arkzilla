@@ -51,6 +51,7 @@ ListView {
         text: model.text
         color: model.color
         time: model.duration
+        onAnimationEnded: root.model.remove(index)
     }
 
     model: ListModel {id: model}

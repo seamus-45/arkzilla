@@ -17,6 +17,8 @@ Rectangle {
     property real time
     property string text
 
+    signal animationEnded()
+
     /**
       * Private
       */
@@ -70,6 +72,8 @@ Rectangle {
             to: 0
             duration: fadeTime
         }
+
+        onRunningChanged: if (!running) { root.animationEnded() }
     }
 
     Component.onCompleted: {
