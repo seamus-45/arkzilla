@@ -8,23 +8,36 @@ Dialog {
 
     x: (parent.width - width) / 2
     y: (parent.height - height) / 2
-
+    width: 300
     focus: true
     modal: true
-    title: qsTr('Enter password')
-    standardButtons: Dialog.Ok | Dialog.Cancel
-    width: 300
 
-    ColumnLayout {
-        spacing: 20
-        anchors.fill: parent
-        TextField {
-            focus: true
-            placeholderText: qsTr('password')
-            selectByMouse: true
-            echoMode: TextField.Password
-            Layout.fillWidth: true
-            Keys.onReturnPressed: { length ? dialog.accept() : focus = true }
+    title: qsTr('Enter password')
+
+    TextField {
+        id: password
+
+        width: parent.width
+        focus: true
+        selectByMouse: true
+        echoMode: TextField.Password
+
+        placeholderText: qsTr('password')
+        Keys.onReturnPressed: { length ? dialog.accept() : focus = true }
+    }
+
+    footer: DialogButtonBox {
+        Button {
+            text: qsTr("Accept")
+            flat: true
+            onClicked: if (!password.text.length) { password.focus = true } else { dialog.accept() }
+        }
+        Button {
+            text: qsTr("Cancel")
+            flat: true
+            DialogButtonBox.buttonRole: DialogButtonBox.RejectRole
         }
     }
+
+    onAccepted: { arkzilla.password = password.text; }
 }

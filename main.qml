@@ -60,6 +60,5 @@ ApplicationWindow {
     property Component ftpManagerUI: FtpManagerUI {}
     property Component settingsUI: SettingsUI {}
 
-    PassUI { id: passUI }
     ToastManager { id: toast  }
 }

@@ -7,6 +7,8 @@ import QtGraphicalEffects 1.0
 Pane {
     padding: 0
 
+    PassUI { id: passUI; onAccepted: ftpView.updateModel() }
+
     FastBlur {
         id: refreshOverlay
         anchors.fill: layout
@@ -34,6 +36,15 @@ Pane {
 
             property bool loading: false
 
+            function updateModel() {
+                if (!arkzilla.password.length && arkzilla.login != 'anonymous') {
+                    passUI.open()
+                } else {
+                    ftpView.loading = true
+                    arkzilla.listRemote()
+                }
+            }
+
             delegate: itemDelegate
 
             PullToRefresh {
@@ -49,12 +60,7 @@ Pane {
                 visible: (ftpView.count == 0 && ftpView.loading == false) ? true : false
             }
 
-            onDragEnded: {
-                if (refreshHeader.refresh) {
-                    ftpView.loading = true
-                    arkzilla.listRemote()
-                }
-            }
+            onDragEnded: if (refreshHeader.refresh) { updateModel() }
         }
     }
 
