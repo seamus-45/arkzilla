@@ -4,6 +4,10 @@ import QtQuick.Controls.Material 2.2
 import QtQuick.Layouts 1.3
 
 Pane {
+
+    property string name: 'settings'
+    property string title: qsTr('Settings')
+
     function saveSettings() {
         arkzilla.storePass = storePass.checked
 
@@ -15,6 +19,9 @@ Pane {
         stackWindow.pop()
         toast.show(qsTr('Settings saved'))
     }
+
+    StackView.onRemoved: mainWindow.title = stackWindow.currentItem.title
+    StackView.onActivated: mainWindow.title = title
 
     GridLayout {
         columns: 2
@@ -129,16 +136,14 @@ Pane {
             onConnectionSuccess: {
                 testInProgress.running = false
                 testConnection.contentItem.visible = true
-                if (success) {
-                    toast.show(qsTr('Connection successful'),
-                               Material.color(Material.Green).toString())
-                }
+                toast.show(qsTr('Connection successful'),
+                           Material.color(Material.Green).toString())
             }
 
             onConnectionError: {
                 testInProgress.running = false
                 testConnection.contentItem.visible = true
-                toast.show(qsTr('Connection fail: ' + error),
+                toast.show(qsTr('Connection fail: ') + error,
                            Material.color(Material.Red).toString())
             }
         }

@@ -10,7 +10,7 @@ ApplicationWindow {
     width: 1200
     height: 800
 
-    title: qsTr("ARKZilla")
+    title: appName
 
     Material.theme: Material.Light
     Material.primary: Material.LightGreen
@@ -21,44 +21,44 @@ ApplicationWindow {
 
     font.pixelSize: 18
 
+    property string appName: 'ARKZilla'
+
     header: ToolBar {
         id: toolBar
         RowLayout {
             anchors.fill: parent
             IconButton {
-                text: ""
-                onClicked: stack.pop()
+                text: ""
+                onClicked: stackWindow.pop()
+                visible: (stackWindow.depth > 1) ? true : false
             }
-            Label {
-                text: mainWindow.title
-                elide: Label.ElideRight
-                horizontalAlignment: Qt.AlignHCenter
-                verticalAlignment: Qt.AlignVCenter
-                Layout.fillWidth: true
-            }
+            Item { Layout.fillWidth: true  }
             IconButton {
                 text: ""
-                onClicked: {
-                    stackWindow.push(settingsUI)
-                }
+                onClicked: if (stackWindow.currentItem.name != 'settings') { stackWindow.push(settingsUI) }
             }
+        }
+        Label {
+            anchors.centerIn: parent
+            text: mainWindow.title
+            elide: Label.ElideRight
         }
     }
 
     StackView {
         id: stackWindow
         anchors.fill: parent
+        initialItem: ftpManagerUI
 
         Component.onCompleted: {
-            stackWindow.push(ftpManagerUI)
             if (!arkzilla.host.length) {
                 stackWindow.push(settingsUI)
             }
         }
-    }
 
-    property Component ftpManagerUI: FtpManagerUI {}
-    property Component settingsUI: SettingsUI {}
+        Component { id: ftpManagerUI; FtpManagerUI {} }
+        Component { id: settingsUI; SettingsUI {} }
+    }
 
     ToastManager { id: toast  }
 }

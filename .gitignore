@@ -1,2 +1,4 @@
 *.qmlc
 *.log
+./data
+./download

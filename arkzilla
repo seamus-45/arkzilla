@@ -1,8 +1,13 @@
 #!/usr/bin/env python3.5
 # -*- coding: utf-8 -*-
+import os
 import sys
 import traceback
-import os
+import inspect
+import logging
+import itertools
+import time
+
 
 from PyQt5.QtGui import QGuiApplication
 from PyQt5.QtQml import QQmlApplicationEngine
@@ -10,8 +15,6 @@ from PyQt5.QtCore import QObject, QRunnable, QThreadPool, QSettings
 from PyQt5.QtCore import pyqtSignal, pyqtSlot, pyqtProperty
 
 from ftplib import FTP
-
-import logging, inspect
 
 
 COMPANY = 'ARKZilla'
@@ -28,6 +31,23 @@ def log(message):
                   func.co_name,
                   func.co_filename,
                   func.co_firstlineno))
+
+
+def rpr(data, indent=0, s='  ', color=True):
+    COLOR = '\033[92m' if color else ''
+    DEFAULT = '\033[0m' if color else ''
+    if type(data) is dict:
+        for key, val in data.items():
+            if type(val) in [dict, list]:
+                print(u'{i}{c}{key}{d}:'.format(i=indent*s, key=key, c=COLOR, d=DEFAULT))
+                rpr(val, indent+1, s)
+            else:
+                print(u'{i}{c}{key}{d}: {val}'.format(i=indent*s, key=key, val=val, c=COLOR, d=DEFAULT))
+    elif type(data) is list:
+        for val in data:
+            if type(val) in [dict, list]:
+                rpr(val, indent, s)
+    print("\n")
 
 
 class Worker(QRunnable):
@@ -97,7 +117,7 @@ class WorkerSignals(QObject):
     '''
     finished = pyqtSignal()
     error = pyqtSignal(str)
-    result = pyqtSignal([bool], [object])
+    result = pyqtSignal(object)
     progress = pyqtSignal(int)
 
 
@@ -108,6 +128,21 @@ class Client(QObject):
 
     def __init__(self):
         super(Client, self).__init__()
+        self.__downloadPath = "{}/download/".format(os.getcwd())
+        self.__dataPath = "{}/data/".format(os.getcwd())
+        self.initFolder(self.__downloadPath)
+        self.initFolder(self.__dataPath)
+
+    def initFolder(self, dir):
+        """
+        Create specified directory if not exists
+        """
+        if not os.path.exists(dir):
+            os.makedirs(dir)
+        else:
+            if not os.path.isdir(dir):
+                os.remove(dir)
+                os.makedirs(dir)
 
     def testConnection(self, progress_callback, host, login, password):
         '''
@@ -121,10 +156,40 @@ class Client(QObject):
 
     def listRemote(self, progress_callback, host, login, password, remote):
         """
-        Get file list from remote server
+        Get list of backups from remote server
         """
         ftp = FTP()
         ftp.connect(host, timeout=5)
+        ftp.login(user=login, passwd=password)
+        remote = ftp.nlst('/{remote}/{mask}'.format(remote=remote, mask='*.ark'))
+        ftp.close
+
+        # Return only filenames without path
+        result = []
+        for item in remote:
+            fname = item.split('/')[-1]
+            # Only add entries with timestamps
+            if '_' in fname:
+                result.append(fname)
+
+        return result
+
+    def listLocal(self):
+        """
+        Get list of downloaded backups
+        """
+        result = []
+        for fname in os.listdir(self.__downloadPath):
+            if os.path.isfile('{}/{}'.format(self.__downloadPath, fname)):
+                result.append(fname)
+
+        return result
+
+    def isLocal(self, file):
+        """
+        Return true if downloaded
+        """
+        return os.path.isfile('{}/{}'.format(self.__downloadPath, file))
 
 
 class ARKZilla(QObject):
@@ -132,8 +197,9 @@ class ARKZilla(QObject):
     Main class
     '''
 
-    connectionSuccess = pyqtSignal(bool, arguments=['success'])
+    connectionSuccess = pyqtSignal()
     connectionError = pyqtSignal(str, arguments=['error'])
+    syncComplete = pyqtSignal(list, arguments=['model'])
 
     def __init__(self):
         super(ARKZilla, self).__init__()
@@ -206,25 +272,57 @@ class ARKZilla(QObject):
                         login=login,
                         password=password
                         )
-        worker.signals.result[bool].connect(self.connectionSuccess)
+        worker.signals.result.connect(self.connectionSuccess)
         worker.signals.error.connect(self.connectionError)
         self.__threadpool.start(worker)
 
-    @pyqtSlot(str)
-    def listRemote(self):
+    @pyqtSlot()
+    def syncModel(self):
         """
-        Slot for getting remote files list thread
+        Slot for getting remote files list in thread
+        Send results to syncWithLocal slot
         """
         worker = Worker(self.__client.listRemote,
                         host=self.host,
                         login=self.login,
-                        password=self.password)
-        worker.signals.result.connect(self.generateFtpModel)
+                        password=self.password,
+                        remote=self.remotePath)
+        worker.signals.result.connect(self.syncWithLocal)
         worker.signals.error.connect(self.connectionError)
         self.__threadpool.start(worker)
 
-    def generateFtpModel(self):
-        return
+    @pyqtSlot()
+    @pyqtSlot(object)
+    def syncWithLocal(self, remote=list()):
+        """
+        Merge remote data with local in one model.
+        Send results to ListView
+
+        :param remote: list of remote files. come from syncModel
+        """
+        local = self.__client.listLocal()
+
+        model = []
+        # Join and prepare two lists
+        for item in itertools.chain(local, remote):
+            # Is file downloaded?
+            local = self.__client.isLocal(item)
+            name = item.split('_')[:1].pop()
+            # Format date and time
+            dateRaw = item[:-4].split('_', 1)[1:].pop()
+            date = time.strftime("%Y.%m.%d %H:%M",
+                                 time.strptime(dateRaw, "%d.%m.%Y_%H.%M.%S"))
+            # Append to final model
+            model.append({
+                        'local': local,
+                        'name': name,
+                        'date': date,
+                        'filename': item
+                        })
+
+        # Send to ListView
+        self.syncComplete.emit(model)
+
 
 if __name__ == "__main__":
     # Set Material Design style

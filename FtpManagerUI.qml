@@ -7,6 +7,9 @@ import QtGraphicalEffects 1.0
 Pane {
     padding: 0
 
+    property string name: 'ftpview'
+    property string title: mainWindow.appName
+
     PassUI { id: passUI; onAccepted: ftpView.updateModel() }
 
     FastBlur {
@@ -19,7 +22,7 @@ Pane {
         visible: ftpView.loading
 
         BusyIndicator { anchors.centerIn: parent }
-        MouseArea { anchors.fill: parent; hoverEnabled: true; onClicked: ftpView.loading = false }
+        MouseArea { anchors.fill: parent; hoverEnabled: true; }
     }
 
     ColumnLayout {
@@ -41,11 +44,12 @@ Pane {
                     passUI.open()
                 } else {
                     ftpView.loading = true
-                    arkzilla.listRemote()
+                    arkzilla.syncModel()
                 }
             }
 
             delegate: itemDelegate
+            model: ListModel {}
 
             PullToRefresh {
                 id: refreshHeader
@@ -139,6 +143,25 @@ Pane {
                     }
                 }
             }
+        }
+    }
+
+    Connections {
+        target: arkzilla
+
+        onConnectionError: {
+            if (ftpView.loading) {
+                toast.show(error, Material.color(Material.Red).toString())
+                arkzilla.syncWithLocal()
+            }
+        }
+
+        onSyncComplete: {
+            ftpView.model.clear()
+            model.forEach(function(elem) {
+                ftpView.model.append(elem)
+            })
+            ftpView.loading = false
         }
     }
 }
