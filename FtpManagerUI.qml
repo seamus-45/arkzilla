@@ -19,7 +19,7 @@ Pane {
         source: layout
         radius: 5
         z: 10
-        visible: ftpView.loading
+        visible: ftpView.syncing
 
         BusyIndicator { anchors.centerIn: parent }
         MouseArea { anchors.fill: parent; hoverEnabled: true; }
@@ -37,13 +37,14 @@ Pane {
             Layout.fillHeight: true
             Layout.fillWidth: true
 
-            property bool loading: false
+            property bool syncing: false
+            property bool downloading: false
 
             function updateModel() {
                 if (!arkzilla.password.length && arkzilla.login != 'anonymous') {
                     passUI.open()
                 } else {
-                    ftpView.loading = true
+                    ftpView.syncing = true
                     arkzilla.syncModel()
                 }
             }
@@ -55,16 +56,17 @@ Pane {
                 id: refreshHeader
                 text: qsTr('Refresh')
                 y: -ftpView.contentY - height
+                visible: !ftpView.downloading
             }
 
             Label {
                 id: refreshLabel
                 anchors.centerIn: parent
                 text: qsTr('Pull to refresh')
-                visible: (ftpView.count == 0 && ftpView.loading == false) ? true : false
+                visible: (ftpView.count == 0 && ftpView.syncing == false) ? true : false
             }
 
-            onDragEnded: if (refreshHeader.refresh) { updateModel() }
+            onDragEnded: if (refreshHeader.refresh && !ftpView.downloading) { updateModel() }
         }
     }
 
@@ -79,6 +81,8 @@ Pane {
 
             height: innerContainer.height + 6
             color: Material.background
+
+            property alias progress: progress.value
 
             Rectangle {
                 id: innerContainer
@@ -124,15 +128,35 @@ Pane {
                         text: ''
                         color: Material.color(Material.Red)
                         visible: model.local ? true : false
+                        enabled: !ftpView.downloading
+                        opacity: ftpView.downloading ? 0.5 : 1
                     }
 
-                    Item { Layout.fillWidth: true  }
+                    Item { Layout.fillWidth: true; visible: !progress.visible  }
+
+                    ProgressBar {
+                        id: progress
+                        leftPadding: 10
+                        Layout.fillWidth: true
+                        indeterminate: false
+                        from: 0
+                        to: 100
+                        value: 0
+                        visible: (value > 0) ? true : false
+                    }
 
                     IconButton {
                         id: buttonDownload
                         text: ''
                         color: Material.color(Material.Green)
                         visible: !model.local
+                        enabled: !ftpView.downloading
+                        opacity: ftpView.downloading ? 0.5 : 1
+                        onClicked: {
+                            ftpView.currentIndex = index
+                            ftpView.downloading = true
+                            arkzilla.download(model.filename)
+                        }
                     }
 
                     IconButton {
@@ -149,11 +173,9 @@ Pane {
     Connections {
         target: arkzilla
 
-        onConnectionError: {
-            if (ftpView.loading) {
-                toast.show(error, Material.color(Material.Red).toString())
-                arkzilla.syncWithLocal()
-            }
+        onSyncError: {
+            toast.show(error, Material.color(Material.Red).toString())
+            arkzilla.syncWithLocal()
         }
 
         onSyncComplete: {
@@ -161,7 +183,24 @@ Pane {
             model.forEach(function(elem) {
                 ftpView.model.append(elem)
             })
-            ftpView.loading = false
+            ftpView.syncing = false
+        }
+
+        onDownloadError: {
+            ftpView.currentItem.progress = 0
+            ftpView.downloading = false
+            toast.show(error, Material.color(Material.Red).toString())
+        }
+
+        onDownloadComplete: {
+            ftpView.currentItem.progress = 0
+            ftpView.downloading = false
+            ftpView.model.setProperty(ftpView.currentIndex, 'local', true)
+            toast.show(ftpView.model.get(ftpView.currentIndex).filename + qsTr(': download complete'))
+        }
+
+        onDownloadProgress: {
+            ftpView.currentItem.progress = percent
         }
     }
 }

@@ -50,6 +50,42 @@ def rpr(data, indent=0, s='  ', color=True):
     print("\n")
 
 
+class Progress(object):
+    """
+    Helper class for progress calculation
+    Simplified version of Progressbar: https://github.com/anler/progressbar
+    """
+    def __init__(self, start=0, end=10, incremental=True):
+        super(Progress, self).__init__()
+        self.__start = start
+        self.__end = end
+        self.__progress = float(self.__start) if incremental else float(self.__end)
+        self.__previous = self.__progress
+
+    def __add__(self, increment):
+        if self.__end > self.__progress + increment:
+            self.__progress += increment
+        else:
+            self.__progress = float(self.__end)
+        return self
+
+    def __sub__(self, decrement):
+        if self.__start < self.__progress - decrement:
+            self.__progress -= decrement
+        else:
+            self.__progress = float(self.__start)
+        return self
+
+    def percent(self):
+        result = int(self.__progress / self.__end * 100)
+        # Return False if percent not changed (do not emit bunch of signals)
+        if result != self.__previous:
+            self.__previous = result
+            return result
+        else:
+            return False
+
+
 class Worker(QRunnable):
     '''
     Worker thread
@@ -162,7 +198,7 @@ class Client(QObject):
         ftp.connect(host, timeout=5)
         ftp.login(user=login, passwd=password)
         remote = ftp.nlst('/{remote}/{mask}'.format(remote=remote, mask='*.ark'))
-        ftp.close
+        ftp.close()
 
         # Return only filenames without path
         result = []
@@ -191,15 +227,42 @@ class Client(QObject):
         """
         return os.path.isfile('{}/{}'.format(self.__downloadPath, file))
 
+    def download(self, progress_callback, host, login, password, remote, filename):
+        """
+        Download file with progress callback
+        """
+        ftp = FTP()
+        ftp.connect(host, timeout=5)
+        ftp.login(user=login, passwd=password)
+        ftp.sendcmd("TYPE i")
+        filesize = ftp.size("{}/{}".format(remote, filename))
+        progress = Progress(end=filesize)
+        with open("{}/{}".format(self.__downloadPath, filename), 'wb') as f:
+
+            def callback(chunk):
+                f.write(chunk)
+                progress + len(chunk)
+                percent = progress.percent()
+                if percent:
+                    progress_callback.emit(percent)
+
+            ftp.retrbinary('RETR {}/{}'.format(remote, filename), callback)
+        ftp.close()
+        return True
+
 
 class ARKZilla(QObject):
     '''
     Main class
     '''
 
-    connectionSuccess = pyqtSignal()
     connectionError = pyqtSignal(str, arguments=['error'])
+    connectionSuccess = pyqtSignal()
+    syncError = pyqtSignal(str, arguments=['error'])
     syncComplete = pyqtSignal(list, arguments=['model'])
+    downloadError = pyqtSignal(str, arguments=['error'])
+    downloadComplete = pyqtSignal()
+    downloadProgress = pyqtSignal(int, arguments=['percent'])
 
     def __init__(self):
         super(ARKZilla, self).__init__()
@@ -288,7 +351,7 @@ class ARKZilla(QObject):
                         password=self.password,
                         remote=self.remotePath)
         worker.signals.result.connect(self.syncWithLocal)
-        worker.signals.error.connect(self.connectionError)
+        worker.signals.error.connect(self.syncError)
         self.__threadpool.start(worker)
 
     @pyqtSlot()
@@ -322,6 +385,24 @@ class ARKZilla(QObject):
 
         # Send to ListView
         self.syncComplete.emit(model)
+
+    @pyqtSlot(str)
+    def download(self, fname):
+        """
+        Slot for downloading remote file in thread
+
+        :param fname: filename to download
+        """
+        worker = Worker(self.__client.download,
+                        host=self.host,
+                        login=self.login,
+                        password=self.password,
+                        remote=self.remotePath,
+                        filename=fname)
+        worker.signals.result.connect(self.downloadComplete)
+        worker.signals.error.connect(self.downloadError)
+        worker.signals.progress.connect(self.downloadProgress)
+        self.__threadpool.start(worker)
 
 
 if __name__ == "__main__":
