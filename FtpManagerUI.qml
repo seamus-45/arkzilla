@@ -67,6 +67,11 @@ Pane {
             }
 
             onDragEnded: if (refreshHeader.refresh && !ftpView.downloading) { updateModel() }
+
+            Component.onCompleted: {
+                ftpView.syncing = true
+                arkzilla.syncWithLocal()
+            }
         }
     }
 
