@@ -5,7 +5,6 @@ import sys
 import traceback
 import inspect
 import logging
-import itertools
 import time
 
 
@@ -359,7 +358,7 @@ class ARKZilla(QObject):
     def syncWithLocal(self, remote=list()):
         """
         Merge remote data with local in one model.
-        Send results to ListView
+        Sort items by date, mark local files and send results to ListView
 
         :param remote: list of remote files. come from syncModel
         """
@@ -367,7 +366,7 @@ class ARKZilla(QObject):
 
         model = []
         # Join and prepare two lists
-        for item in itertools.chain(local, remote):
+        for item in list(set(local + remote)):
             # Is file downloaded?
             local = self.__client.isLocal(item)
             name = item.split('_')[:1].pop()
@@ -382,6 +381,9 @@ class ARKZilla(QObject):
                         'date': date,
                         'filename': item
                         })
+
+        # Sort by date, and reverse list
+        model.sort(key=lambda r: time.strptime(r['date'], "%Y.%m.%d %H:%M"), reverse=True)
 
         # Send to ListView
         self.syncComplete.emit(model)
