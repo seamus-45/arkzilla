@@ -1,4 +1,4 @@
-import QtQuick 2.6
+import QtQuick 2.7
 import QtQuick.Controls 2.2
 import QtQuick.Controls.Material 2.2
 import QtQuick.Layouts 1.3
@@ -24,7 +24,6 @@ ApplicationWindow {
     property string appName: 'ARKZilla'
 
     header: ToolBar {
-        id: toolBar
         RowLayout {
             anchors.fill: parent
             IconButton {
