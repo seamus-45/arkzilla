@@ -15,6 +15,7 @@ Pane {
         arkzilla.login = login.text
         arkzilla.password = password.text
         arkzilla.remotePath = remotePath.text
+        arkzilla.toolsPath = toolsPath.text
 
         stackWindow.pop()
         toast.show(qsTr('Settings saved'))
@@ -22,6 +23,13 @@ Pane {
 
     StackView.onRemoved: mainWindow.title = stackWindow.currentItem.title
     StackView.onActivated: mainWindow.title = title
+
+    FolderDialog {
+        id: folderDialog
+        filter: ['ark-tools.jar']
+        caption: qsTr('Please select ark-tools.jar location')
+        onAccepted: toolsPath.text = filePath
+    }
 
     Flickable {
         anchors.fill: parent
@@ -160,13 +168,14 @@ Pane {
                     id: toolsPath
                     Layout.fillWidth: true
                     anchors.baseline: parent.baseline
-                    placeholderText: qsTr("ark-tools.exe")
+                    text: arkzilla.toolsPath
+                    placeholderText: qsTr("ark-tools.jar")
                 }
                 Button {
                     text: qsTr('Choose')
                     anchors.baseline: parent.baseline
                     onClicked: {
-                        console.log(parent.baseline)
+                        folderDialog.open()
                     }
                 }
             }

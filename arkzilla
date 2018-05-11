@@ -320,6 +320,14 @@ class ARKZilla(QObject):
     def remotePath(self, value):
         self.__settings.setValue('remotePath', value)
 
+    @pyqtProperty(str, constant=True)
+    def toolsPath(self):
+        return self.__settings.value('toolsPath', '')
+
+    @toolsPath.setter
+    def toolsPath(self, value):
+        self.__settings.setValue('toolsPath', value)
+
     @pyqtSlot(str, str, str)
     def testConnection(self, host, login, password):
         """
