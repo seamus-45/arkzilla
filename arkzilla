@@ -262,6 +262,7 @@ class ARKZilla(QObject):
     downloadError = pyqtSignal(str, arguments=['error'])
     downloadComplete = pyqtSignal()
     downloadProgress = pyqtSignal(int, arguments=['percent'])
+    themeChanged = pyqtSignal()
 
     def __init__(self):
         super(ARKZilla, self).__init__()
@@ -327,6 +328,15 @@ class ARKZilla(QObject):
     @toolsPath.setter
     def toolsPath(self, value):
         self.__settings.setValue('toolsPath', value)
+
+    @pyqtProperty(bool, notify=themeChanged)
+    def darkTheme(self):
+        return self.__settings.value('darkTheme', False, type=bool)
+
+    @darkTheme.setter
+    def darkTheme(self, value):
+        self.__settings.setValue('darkTheme', value)
+        self.themeChanged.emit()
 
     @pyqtSlot(str, str, str)
     def testConnection(self, host, login, password):

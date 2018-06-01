@@ -16,6 +16,7 @@ Pane {
         arkzilla.password = password.text
         arkzilla.remotePath = remotePath.text
         arkzilla.toolsPath = toolsPath.text
+        arkzilla.darkTheme = darkTheme.checked
 
         stackWindow.pop()
         toast.show(qsTr('Settings saved'))
@@ -178,6 +179,24 @@ Pane {
                         folderDialog.open()
                     }
                 }
+            }
+
+            LabelSeparator {
+                Layout.columnSpan: 3
+                Layout.fillWidth: true
+                text: qsTr('Theme')
+            }
+            Rectangle {
+                Layout.fillHeight: true
+                width: 4
+                color: Material.color(Material.Green)
+            }
+            Switch {
+                id: darkTheme
+                Layout.columnSpan: 2
+                Layout.alignment: Qt.AlignRight
+                text: qsTr("Switch Light/Dark theme")
+                checked: arkzilla.darkTheme
             }
 
             RowLayout {

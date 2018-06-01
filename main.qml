@@ -12,7 +12,7 @@ ApplicationWindow {
 
     title: appName
 
-    Material.theme: Material.Light
+    Material.theme: arkzilla.darkTheme ? Material.Dark : Material.Light
     Material.primary: Material.LightGreen
     Material.accent: Material.Green
     Material.elevation: 6
