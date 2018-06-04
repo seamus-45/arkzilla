@@ -13,7 +13,6 @@ Pane {
     PassUI { id: passUI; onAccepted: ftpView.updateModel() }
 
     FastBlur {
-        id: refreshOverlay
         anchors.fill: layout
 
         source: layout
@@ -38,7 +37,7 @@ Pane {
             Layout.fillWidth: true
 
             property bool syncing: false
-            property bool downloading: false
+            property bool processing: false
 
             function updateModel() {
                 if (!arkzilla.password.length && arkzilla.login != 'anonymous') {
@@ -56,7 +55,7 @@ Pane {
                 id: refreshHeader
                 text: qsTr('Refresh')
                 y: -ftpView.contentY - height
-                visible: !ftpView.downloading
+                visible: !ftpView.processing
             }
 
             Label {
@@ -66,7 +65,7 @@ Pane {
                 visible: (ftpView.count == 0 && ftpView.syncing == false) ? true : false
             }
 
-            onDragEnded: if (refreshHeader.refresh && !ftpView.downloading) { updateModel() }
+            onDragEnded: if (refreshHeader.refresh && !ftpView.processing) { updateModel() }
 
             Component.onCompleted: {
                 ftpView.syncing = true
@@ -133,8 +132,8 @@ Pane {
                         text: ''
                         color: Material.color(Material.Red)
                         visible: model.local ? true : false
-                        enabled: !ftpView.downloading
-                        opacity: ftpView.downloading ? 0.5 : 1
+                        enabled: !ftpView.processing
+                        opacity: ftpView.processing ? 0.5 : 1
                     }
 
                     Item { Layout.fillWidth: true; visible: !progress.visible  }
@@ -155,11 +154,11 @@ Pane {
                         text: ''
                         color: Material.color(Material.Green)
                         visible: !model.local
-                        enabled: !ftpView.downloading
-                        opacity: ftpView.downloading ? 0.5 : 1
+                        enabled: !ftpView.processing
+                        opacity: ftpView.processing ? 0.5 : 1
                         onClicked: {
                             ftpView.currentIndex = index
-                            ftpView.downloading = true
+                            ftpView.processing = true
                             arkzilla.download(model.filename)
                         }
                     }
@@ -169,6 +168,8 @@ Pane {
                         text: ''
                         color: Material.color(Material.Orange)
                         visible: model.local
+                        enabled: !ftpView.processing
+                        opacity: ftpView.processing ? 0.5 : 1
                     }
                 }
             }
@@ -193,13 +194,13 @@ Pane {
 
         onDownloadError: {
             ftpView.currentItem.progress = 0
-            ftpView.downloading = false
+            ftpView.processing = false
             toast.show(error, Material.color(Material.Red).toString())
         }
 
         onDownloadComplete: {
             ftpView.currentItem.progress = 0
-            ftpView.downloading = false
+            ftpView.processing = false
             ftpView.model.setProperty(ftpView.currentIndex, 'local', true)
             toast.show(ftpView.model.get(ftpView.currentIndex).filename + qsTr(': download complete'))
         }
