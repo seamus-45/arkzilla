@@ -163,8 +163,18 @@ class Client(QObject):
 
     def __init__(self):
         super(Client, self).__init__()
+        # Init local data path
         self.__downloadPath = "{}/download/".format(os.getcwd())
         self.__dataPath = "{}/data/".format(os.getcwd())
+        self.initFolder(self.__downloadPath)
+        self.initFolder(self.__dataPath)
+
+    def updatePrefix(self, prefix):
+        """
+        Update local data path prefixed with remote host name
+        """
+        self.__downloadPath = "{}/download/{}/".format(os.getcwd(), prefix)
+        self.__dataPath = "{}/data/{}/".format(os.getcwd(), prefix)
         self.initFolder(self.__downloadPath)
         self.initFolder(self.__dataPath)
 
@@ -263,6 +273,7 @@ class ARKZilla(QObject):
     downloadComplete = pyqtSignal()
     downloadProgress = pyqtSignal(int, arguments=['percent'])
     themeChanged = pyqtSignal()
+    hostChanged = pyqtSignal()
 
     def __init__(self):
         super(ARKZilla, self).__init__()
@@ -275,14 +286,18 @@ class ARKZilla(QObject):
         print("Multithreading with maximum %d threads" % self.__threadpool.maxThreadCount())
 
         self.__client = Client()
+        if self.host:
+            self.__client.updatePrefix(prefix=self.host)
 
-    @pyqtProperty(str, constant=True)
+    @pyqtProperty(str, notify=hostChanged)
     def host(self):
         return self.__settings.value('host')
 
     @host.setter
     def host(self, value):
         self.__settings.setValue('host', value)
+        self.__client.updatePrefix(prefix=value)
+        self.hostChanged.emit()
 
     @pyqtProperty(str, constant=True)
     def login(self):
