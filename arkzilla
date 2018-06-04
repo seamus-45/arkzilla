@@ -164,8 +164,8 @@ class Client(QObject):
     def __init__(self):
         super(Client, self).__init__()
         # Init local data path
-        self.__downloadPath = "{}/download/".format(os.getcwd())
-        self.__dataPath = "{}/data/".format(os.getcwd())
+        self.__downloadPath = os.path.join(os.getcwd(), 'download')
+        self.__dataPath = os.path.join(os.getcwd(), 'data')
         self.initFolder(self.__downloadPath)
         self.initFolder(self.__dataPath)
 
@@ -173,8 +173,8 @@ class Client(QObject):
         """
         Update local data path prefixed with remote host name
         """
-        self.__downloadPath = "{}/download/{}/".format(os.getcwd(), prefix)
-        self.__dataPath = "{}/data/{}/".format(os.getcwd(), prefix)
+        self.__downloadPath = os.path.join(os.getcwd(), 'download', prefix)
+        self.__dataPath = os.path.join(os.getcwd(), 'data', prefix)
         self.initFolder(self.__downloadPath)
         self.initFolder(self.__dataPath)
 
@@ -206,7 +206,7 @@ class Client(QObject):
         ftp = FTP()
         ftp.connect(host, timeout=5)
         ftp.login(user=login, passwd=password)
-        remote = ftp.nlst('/{remote}/{mask}'.format(remote=remote, mask='*.ark'))
+        remote = ftp.nlst(os.path.join(remote, '*.ark'))
         ftp.close()
 
         # Return only filenames without path
@@ -225,7 +225,7 @@ class Client(QObject):
         """
         result = []
         for fname in os.listdir(self.__downloadPath):
-            if os.path.isfile('{}/{}'.format(self.__downloadPath, fname)):
+            if os.path.isfile(os.path.join(self.__downloadPath, fname)):
                 result.append(fname)
 
         return result
@@ -234,7 +234,7 @@ class Client(QObject):
         """
         Return true if downloaded
         """
-        return os.path.isfile('{}/{}'.format(self.__downloadPath, file))
+        return os.path.isfile(os.path.join(self.__downloadPath, file))
 
     def download(self, progress_callback, host, login, password, remote, filename):
         """
@@ -244,9 +244,9 @@ class Client(QObject):
         ftp.connect(host, timeout=5)
         ftp.login(user=login, passwd=password)
         ftp.sendcmd("TYPE i")
-        filesize = ftp.size("{}/{}".format(remote, filename))
+        filesize = ftp.size(os.path.join(remote, filename))
         progress = Progress(end=filesize)
-        with open("{}/{}".format(self.__downloadPath, filename), 'wb') as f:
+        with open(os.path.join(self.__downloadPath, filename), 'wb') as f:
 
             def callback(chunk):
                 f.write(chunk)
@@ -255,8 +255,38 @@ class Client(QObject):
                 if percent:
                     progress_callback.emit(percent)
 
-            ftp.retrbinary('RETR {}/{}'.format(remote, filename), callback)
+            ftp.retrbinary('RETR {}'.format(os.path.join(remote, filename)), callback)
         ftp.close()
+        return True
+
+    def remove(self, progress_callback, filename):
+        """
+        Remove downloaded file and unpacked data with progress callback
+        """
+        dataDir = os.path.join(self.__dataPath, filename)
+        backup = os.path.join(self.__downloadPath, filename)
+
+        # Build list of items to be removed
+        paths = list()
+        if os.path.exists(dataDir) and os.path.isdir(dataDir):
+            for root, dirs, files in os.walk(dataDir, topdown=False):
+                for item in files:
+                    paths.append(os.path.join(root, item))
+                for item in dirs:
+                    paths.append(os.path.join(root, item))
+        paths.append(backup)
+
+        # Remove files and emit progress callback
+        progress = Progress(end=len(paths))
+        for item in paths:
+            if os.path.isdir(item):
+                os.rmdir(item)
+            else:
+                os.remove(item)
+            progress + 1
+            percent = progress.percent()
+            if percent:
+                progress_callback.emit(percent)
         return True
 
 
@@ -272,6 +302,9 @@ class ARKZilla(QObject):
     downloadError = pyqtSignal(str, arguments=['error'])
     downloadComplete = pyqtSignal()
     downloadProgress = pyqtSignal(int, arguments=['percent'])
+    removeError = pyqtSignal(str, arguments=['error'])
+    removeComplete = pyqtSignal()
+    removeProgress = pyqtSignal(int, arguments=['percent'])
     themeChanged = pyqtSignal()
     hostChanged = pyqtSignal()
 
@@ -437,6 +470,19 @@ class ARKZilla(QObject):
         worker.signals.result.connect(self.downloadComplete)
         worker.signals.error.connect(self.downloadError)
         worker.signals.progress.connect(self.downloadProgress)
+        self.__threadpool.start(worker)
+
+    @pyqtSlot(str)
+    def remove(self, fname):
+        """
+        Slot for removing local data in thread
+
+        :param fname: filename to remove
+        """
+        worker = Worker(self.__client.remove, filename=fname)
+        worker.signals.result.connect(self.removeComplete)
+        worker.signals.error.connect(self.removeError)
+        worker.signals.progress.connect(self.removeProgress)
         self.__threadpool.start(worker)
 
 

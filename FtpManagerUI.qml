@@ -89,7 +89,7 @@ Pane {
             height: innerContainer.height + 6
             color: Material.background
 
-            property alias progress: progress.value
+            property alias progress: progressBar.value
 
             Rectangle {
                 id: innerContainer
@@ -131,18 +131,23 @@ Pane {
                     }
 
                     IconButton {
-                        id: buttonDelete
+                        id: buttonRemove
                         text: ''
                         color: Material.color(Material.Red)
                         visible: model.local ? true : false
                         enabled: !ftpView.processing
                         opacity: ftpView.processing ? 0.5 : 1
+                        onClicked: {
+                            ftpView.currentIndex = index
+                            ftpView.processing = true
+                            arkzilla.remove(model.filename)
+                        }
                     }
 
-                    Item { Layout.fillWidth: true; visible: !progress.visible  }
+                    Item { Layout.fillWidth: true; visible: !progressBar.visible  }
 
                     ProgressBar {
-                        id: progress
+                        id: progressBar
                         leftPadding: 10
                         Layout.fillWidth: true
                         indeterminate: false
@@ -209,6 +214,23 @@ Pane {
         }
 
         onDownloadProgress: {
+            ftpView.currentItem.progress = percent
+        }
+
+        onRemoveError: {
+            ftpView.currentItem.progress = 0
+            ftpView.processing = false
+            toast.show(error, Material.color(Material.Red).toString())
+        }
+
+        onRemoveComplete: {
+            ftpView.currentItem.progress = 0
+            ftpView.processing = false
+            ftpView.model.setProperty(ftpView.currentIndex, 'local', false)
+            toast.show(ftpView.model.get(ftpView.currentIndex).filename + qsTr(': successfuly removed'))
+        }
+
+        onRemoveProgress: {
             ftpView.currentItem.progress = percent
         }
     }
