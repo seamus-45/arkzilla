@@ -42,7 +42,9 @@ Rectangle {
     Text {
         id: message
         text: parent.text
+        textFormat: Text.StyledText
         color: "white"
+        linkColor: '#00bcd4'
         font.pixelSize: mainWindow.font.pixelSize
         wrapMode: Text.Wrap
         horizontalAlignment: Text.AlignHCenter
@@ -51,6 +53,12 @@ Rectangle {
             left: parent.left
             right: parent.right
             margins: margin / 2
+        }
+        onLinkActivated: Qt.openUrlExternally(link)
+        MouseArea {
+            anchors.fill: parent
+            acceptedButtons: Qt.NoButton // we don't want to eat clicks on the Text
+            cursorShape: parent.hoveredLink ? Qt.PointingHandCursor : Qt.ArrowCursor
         }
     }
 
