@@ -90,6 +90,7 @@ Pane {
             color: Material.background
 
             property alias progress: progressBar.value
+            property alias indeterminate: progressBar.indeterminate
 
             Rectangle {
                 id: innerContainer
@@ -133,6 +134,10 @@ Pane {
                     IconButton {
                         id: buttonRemove
                         text: ''
+                        ToolTip.text: qsTr("Remove downloaded backup data")
+                        ToolTip.delay: 1000
+                        ToolTip.timeout: 5000
+                        ToolTip.visible: hovered
                         color: Material.color(Material.Red)
                         visible: model.local ? true : false
                         enabled: !ftpView.processing
@@ -154,12 +159,16 @@ Pane {
                         from: 0
                         to: 100
                         value: 0
-                        visible: (value > 0) ? true : false
+                        visible: ((value > 0) || indeterminate) ? true : false
                     }
 
                     IconButton {
                         id: buttonDownload
                         text: ''
+                        ToolTip.text: qsTr("Download remote backup")
+                        ToolTip.delay: 1000
+                        ToolTip.timeout: 5000
+                        ToolTip.visible: hovered
                         color: Material.color(Material.Green)
                         visible: !model.local
                         enabled: !ftpView.processing
@@ -174,10 +183,20 @@ Pane {
                     IconButton {
                         id: buttonOpen
                         text: ''
+                        ToolTip.text: qsTr("Unpack and open backup with ark-tools")
+                        ToolTip.delay: 1000
+                        ToolTip.timeout: 5000
+                        ToolTip.visible: hovered
                         color: Material.color(Material.Orange)
                         visible: model.local
                         enabled: !ftpView.processing
                         opacity: ftpView.processing ? 0.5 : 1
+                        onClicked: {
+                            ftpView.currentIndex = index
+                            ftpView.processing = true
+                            indeterminate = true
+                            arkzilla.unpack(model.filename)
+                        }
                     }
                 }
             }
@@ -232,6 +251,25 @@ Pane {
 
         onRemoveProgress: {
             ftpView.currentItem.progress = percent
+        }
+
+        onUnpackError: {
+            ftpView.currentItem.indeterminate = false
+            ftpView.processing = false
+            toast.show(error, Material.color(Material.Red).toString())
+        }
+
+        onUnpackComplete: {
+            var filename = ftpView.model.get(ftpView.currentIndex).filename
+            ftpView.currentItem.indeterminate = false
+            ftpView.processing = false
+        }
+
+        onJavaNotFound: {
+            ftpView.currentItem.indeterminate = false
+            ftpView.processing = false
+            toast.show(qsTr('Java Runtime Environment not found. Please download and install it: ') +
+                '<a href="https://java.com/download">https://java.com/download</a>', undefined, 10000)
         }
     }
 }

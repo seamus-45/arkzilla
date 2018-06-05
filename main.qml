@@ -34,7 +34,12 @@ ApplicationWindow {
             Item { Layout.fillWidth: true  }
             IconButton {
                 text: ""
-                onClicked: if (stackWindow.currentItem.name != 'settings') { stackWindow.push(settingsUI) }
+                ToolTip.text: qsTr("Open settings")
+                ToolTip.delay: 1000
+                ToolTip.timeout: 5000
+                ToolTip.visible: hovered
+                visible: stackWindow.currentItem.name != 'settings'
+                onClicked: stackWindow.push(settingsUI)
             }
         }
         Label {

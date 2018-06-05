@@ -14,9 +14,15 @@ from PyQt5.QtCore import QObject, QRunnable, QThreadPool, QSettings
 from PyQt5.QtCore import pyqtSignal, pyqtSlot, pyqtProperty
 
 from ftplib import FTP
+from shutil import which, unpack_archive
+from requests import get
+from subprocess import run
 
+
+__VERSION__ = '0.1'
 
 COMPANY = 'ARKZilla'
+USERAGENT = {'User-Agent': COMPANY + __VERSION__}
 
 
 def log(message):
@@ -164,30 +170,20 @@ class Client(QObject):
     def __init__(self):
         super(Client, self).__init__()
         # Init local data path
-        self.__downloadPath = os.path.join(os.getcwd(), 'download')
-        self.__dataPath = os.path.join(os.getcwd(), 'data')
-        self.initFolder(self.__downloadPath)
-        self.initFolder(self.__dataPath)
+        self.__cwd = os.getcwd()
+        self.__downloadPath = os.path.join(self.__cwd, 'download')
+        self.__dataPath = os.path.join(self.__cwd, 'data')
+        os.makedirs(self.__downloadPath, exist_ok=True)
+        os.makedirs(self.__dataPath, exist_ok=True)
 
     def updatePrefix(self, prefix):
         """
         Update local data path prefixed with remote host name
         """
-        self.__downloadPath = os.path.join(os.getcwd(), 'download', prefix)
-        self.__dataPath = os.path.join(os.getcwd(), 'data', prefix)
-        self.initFolder(self.__downloadPath)
-        self.initFolder(self.__dataPath)
-
-    def initFolder(self, dir):
-        """
-        Create specified directory if not exists
-        """
-        if not os.path.exists(dir):
-            os.makedirs(dir)
-        else:
-            if not os.path.isdir(dir):
-                os.remove(dir)
-                os.makedirs(dir)
+        self.__downloadPath = os.path.join(self.__cwd, 'download', prefix)
+        self.__dataPath = os.path.join(self.__cwd, 'data', prefix)
+        os.makedirs(self.__downloadPath, exist_ok=True)
+        os.makedirs(self.__dataPath, exist_ok=True)
 
     def testConnection(self, progress_callback, host, login, password):
         '''
@@ -289,6 +285,70 @@ class Client(QObject):
                 progress_callback.emit(percent)
         return True
 
+    def unpack(self, progress_callback, filename, tools):
+        """
+        Unpack specified backup using ark-tools
+        """
+        dataDir = os.path.join(self.__dataPath, filename)
+        backup = os.path.join(self.__downloadPath, filename)
+        # Check if backup already unpacked
+        if os.path.exists(os.path.join(dataDir, '.complete')):
+            return
+
+        # Download ark-tools if not exists
+        deftools = os.path.join(self.__cwd, 'tools', 'ark-tools.jar')
+        if not os.path.exists(tools):
+            if os.path.exists(deftools):
+                tools = deftools
+            else:
+                tools = self.setupTools()
+
+        # Check and download ark_data.json
+        if not os.path.exists(os.path.join(self.__cwd, 'tools', 'ark_data.json')):
+            args = ['java', '-jar', tools, '--quiet', 'update-data']
+            run(args)
+
+        # Unpack backup
+        os.makedirs(dataDir, exist_ok=True)
+        args = ['java', '-jar', tools, '--quiet', 'tamed', '--clean', '--write-all-fields', backup, dataDir]
+        r = run(args)
+        if r.returncode == 0:
+            open(os.path.join(dataDir, '.complete'), 'a').close()
+        else:
+            return False
+
+    def setupTools(self):
+        """
+        Download and unpack ark-tools
+        """
+        log('ark-tools.jar not found. begin download...')
+        # Get archive name to download
+        url = None
+        r = get('https://api.github.com/repos/Qowyn/ark-tools/releases/latest', headers=USERAGENT)
+        if r.status_code == 200:
+            items = r.json()
+            for item in items['assets']:
+                if item['content_type'] == 'application/x-zip-compressed':
+                    url = item['browser_download_url']
+        else:
+            return None
+
+        # Download ark-tools archive
+        r = get(url, headers=USERAGENT)
+        if r.status_code == 200:
+            dir = os.path.join(self.__cwd, 'tools')
+            os.makedirs(dir, exist_ok=True)
+            archive = os.path.join(dir, 'ark-tools.zip')
+            with open(archive, 'wb') as f:
+                f.write(r.content)
+            f.close()
+            # Unpack and delete downloaded archive
+            unpack_archive(archive, dir, format='zip')
+            os.remove(archive)
+            return os.path.join(dir, 'ark-tools.jar')
+
+        return None
+
 
 class ARKZilla(QObject):
     '''
@@ -305,6 +365,9 @@ class ARKZilla(QObject):
     removeError = pyqtSignal(str, arguments=['error'])
     removeComplete = pyqtSignal()
     removeProgress = pyqtSignal(int, arguments=['percent'])
+    unpackError = pyqtSignal(str, arguments=['error'])
+    unpackComplete = pyqtSignal()
+    javaNotFound = pyqtSignal()
     themeChanged = pyqtSignal()
     hostChanged = pyqtSignal()
 
@@ -483,6 +546,22 @@ class ARKZilla(QObject):
         worker.signals.result.connect(self.removeComplete)
         worker.signals.error.connect(self.removeError)
         worker.signals.progress.connect(self.removeProgress)
+        self.__threadpool.start(worker)
+
+    @pyqtSlot(str)
+    def unpack(self, fname):
+        """
+        Slot for unpacking local data in thread
+
+        :param fname: filename to unpack
+        """
+        # Check java exists
+        if not which('java'):
+            self.javaNotFound.emit()
+            return
+        worker = Worker(self.__client.unpack, filename=fname, tools=self.toolsPath)
+        worker.signals.result.connect(self.unpackComplete)
+        worker.signals.error.connect(self.unpackError)
         self.__threadpool.start(worker)
 
 
