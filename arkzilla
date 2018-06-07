@@ -306,16 +306,14 @@ class Client(QObject):
         # Check and download ark_data.json
         if not os.path.exists(os.path.join(self.__cwd, 'tools', 'ark_data.json')):
             args = ['java', '-jar', tools, '--quiet', 'update-data']
-            run(args)
+            run(args, check=True)
 
         # Unpack backup
         os.makedirs(dataDir, exist_ok=True)
         args = ['java', '-jar', tools, '--quiet', 'tamed', '--clean', '--write-all-fields', backup, dataDir]
-        r = run(args)
+        r = run(args, check=True)
         if r.returncode == 0:
             open(os.path.join(dataDir, '.complete'), 'a').close()
-        else:
-            return False
 
     def setupTools(self):
         """
