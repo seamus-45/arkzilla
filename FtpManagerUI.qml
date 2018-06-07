@@ -118,6 +118,7 @@ Pane {
                     anchors.margins: 3
 
                     clip: true
+                    z: 2
 
                     Rectangle {
                         Layout.fillHeight: true
@@ -149,18 +150,7 @@ Pane {
                         }
                     }
 
-                    Item { Layout.fillWidth: true; visible: !progressBar.visible  }
-
-                    ProgressBar {
-                        id: progressBar
-                        leftPadding: 10
-                        Layout.fillWidth: true
-                        indeterminate: false
-                        from: 0
-                        to: 100
-                        value: 0
-                        visible: ((value > 0) || indeterminate) ? true : false
-                    }
+                    Item { Layout.fillWidth: true }
 
                     IconButton {
                         id: buttonDownload
@@ -198,6 +188,21 @@ Pane {
                             arkzilla.unpack(model.filename)
                         }
                     }
+                }
+
+                ProgressBar {
+                    id: progressBar
+                    anchors.left: parent.left
+                    anchors.right: parent.right
+                    anchors.bottom: parent.bottom
+
+                    indeterminate: false
+                    from: 0
+                    to: 100
+                    value: 0
+                    visible: ((value > 0) || indeterminate) ? true : false
+                    opacity: 0.4
+                    z: 1
                 }
             }
         }
