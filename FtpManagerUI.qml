@@ -21,7 +21,7 @@ Pane {
         source: layout
         radius: 5
         z: 10
-        visible: ftpView.syncing
+        visible: ftpView.state == "syncing"
 
         BusyIndicator { anchors.centerIn: parent }
         MouseArea { anchors.fill: parent; hoverEnabled: true; }
@@ -39,14 +39,13 @@ Pane {
             Layout.fillHeight: true
             Layout.fillWidth: true
 
-            property bool syncing: false
-            property bool processing: false
+            state: "syncing"
 
             function updateModel() {
                 if (!arkzilla.password.length && arkzilla.login != 'anonymous') {
                     passUI.open()
                 } else {
-                    ftpView.syncing = true
+                    ftpView.state = "syncing"
                     arkzilla.syncModel()
                 }
             }
@@ -58,22 +57,31 @@ Pane {
                 id: refreshHeader
                 text: qsTr('Refresh')
                 y: -ftpView.contentY - height
-                visible: !ftpView.processing
+                visible: ftpView.state == "normal"
             }
 
             Label {
                 id: refreshLabel
                 anchors.centerIn: parent
                 text: qsTr('Pull to refresh')
-                visible: (ftpView.count == 0 && ftpView.syncing == false) ? true : false
+                visible: (ftpView.count == 0 && ftpView.state == "normal") ? true : false
             }
 
-            onDragEnded: if (refreshHeader.refresh && !ftpView.processing) { updateModel() }
+            onDragEnded: if (refreshHeader.refresh && ftpView.state == "normal") { updateModel() }
 
             Component.onCompleted: {
-                ftpView.syncing = true
                 arkzilla.syncWithLocal()
             }
+
+            states: [
+                State { name: "syncing" },
+                State { name: "processing" },
+                State { name: "normal"
+                    PropertyChanges { target: ftpView.currentItem; restoreEntryValues: false; indeterminate: false }
+                    PropertyChanges { target: ftpView.currentItem; restoreEntryValues: false; progress: 0 }
+                    PropertyChanges { target: ftpView.currentItem; restoreEntryValues: false; statusText: '' }
+                }
+            ]
         }
     }
 
@@ -91,6 +99,7 @@ Pane {
 
             property alias progress: progressBar.value
             property alias indeterminate: progressBar.indeterminate
+            property alias statusText: labelStatus.text
 
             Rectangle {
                 id: innerContainer
@@ -141,16 +150,23 @@ Pane {
                         ToolTip.visible: hovered
                         color: Material.color(Material.Red)
                         visible: model.local ? true : false
-                        enabled: !ftpView.processing
-                        opacity: ftpView.processing ? 0.5 : 1
+                        enabled: ftpView.state == "normal"
+                        opacity: ftpView.state == "processing" ? 0.5 : 1
                         onClicked: {
+                            ftpView.state = "processing"
+                            labelStatus.text = "Removing"
                             ftpView.currentIndex = index
-                            ftpView.processing = true
                             arkzilla.remove(model.filename)
                         }
                     }
 
-                    Item { Layout.fillWidth: true }
+                    Label {
+                        id: labelStatus
+                        Layout.fillWidth: true
+                        leftPadding: buttonRemove.visible ? 0 : 16
+                        font.pixelSize: 16
+                        color: Material.color(Material.Grey)
+                    }
 
                     IconButton {
                         id: buttonDownload
@@ -161,11 +177,12 @@ Pane {
                         ToolTip.visible: hovered
                         color: Material.color(Material.Green)
                         visible: !model.local
-                        enabled: !ftpView.processing
-                        opacity: ftpView.processing ? 0.5 : 1
+                        enabled: ftpView.state == "normal"
+                        opacity: ftpView.state == "processing" ? 0.5 : 1
                         onClicked: {
+                            ftpView.state = "processing"
+                            labelStatus.text = "Downloading"
                             ftpView.currentIndex = index
-                            ftpView.processing = true
                             arkzilla.download(model.filename)
                         }
                     }
@@ -179,11 +196,12 @@ Pane {
                         ToolTip.visible: hovered
                         color: Material.color(Material.Orange)
                         visible: model.local
-                        enabled: !ftpView.processing
-                        opacity: ftpView.processing ? 0.5 : 1
+                        enabled: ftpView.state == "normal"
+                        opacity: ftpView.state == "processing" ? 0.5 : 1
                         onClicked: {
+                            ftpView.state = "processing"
+                            labelStatus.text = "Unpacking"
                             ftpView.currentIndex = index
-                            ftpView.processing = true
                             indeterminate = true
                             arkzilla.unpack(model.filename)
                         }
@@ -221,20 +239,18 @@ Pane {
             model.forEach(function(elem) {
                 ftpView.model.append(elem)
             })
-            ftpView.syncing = false
+            ftpView.state = "normal"
         }
 
         onDownloadError: {
-            ftpView.currentItem.progress = 0
-            ftpView.processing = false
             toast.show(error, Material.color(Material.Red).toString())
+            ftpView.state = "normal"
         }
 
         onDownloadComplete: {
-            ftpView.currentItem.progress = 0
-            ftpView.processing = false
             ftpView.model.setProperty(ftpView.currentIndex, 'local', true)
             toast.show(ftpView.model.get(ftpView.currentIndex).filename + qsTr(': download complete'))
+            ftpView.state = "normal"
         }
 
         onDownloadProgress: {
@@ -242,16 +258,14 @@ Pane {
         }
 
         onRemoveError: {
-            ftpView.currentItem.progress = 0
-            ftpView.processing = false
             toast.show(error, Material.color(Material.Red).toString())
+            ftpView.state = "normal"
         }
 
         onRemoveComplete: {
-            ftpView.currentItem.progress = 0
-            ftpView.processing = false
             ftpView.model.setProperty(ftpView.currentIndex, 'local', false)
             toast.show(ftpView.model.get(ftpView.currentIndex).filename + qsTr(': successfuly removed'))
+            ftpView.state = "normal"
         }
 
         onRemoveProgress: {
@@ -259,22 +273,19 @@ Pane {
         }
 
         onUnpackError: {
-            ftpView.currentItem.indeterminate = false
-            ftpView.processing = false
             toast.show(error, Material.color(Material.Red).toString())
+            ftpView.state = "normal"
         }
 
         onUnpackComplete: {
             var filename = ftpView.model.get(ftpView.currentIndex).filename
-            ftpView.currentItem.indeterminate = false
-            ftpView.processing = false
+            ftpView.state = "normal"
         }
 
         onJavaNotFound: {
-            ftpView.currentItem.indeterminate = false
-            ftpView.processing = false
             toast.show(qsTr('Java Runtime Environment not found. Please download and install it: ') +
                 '<a href="https://java.com/download">https://java.com/download</a>', undefined, 10000)
+            ftpView.state = "normal"
         }
     }
 }
