@@ -13,7 +13,7 @@ Pane {
     StackView.onRemoved: mainWindow.title = stackWindow.currentItem.title
     StackView.onActivated: mainWindow.title = title
 
-    PassUI { id: passUI; onAccepted: ftpView.updateModel() }
+    PassUI { id: passUI; onAccepted: ftpView.syncRemote() }
 
     FastBlur {
         anchors.fill: layout
@@ -41,17 +41,17 @@ Pane {
 
             state: "syncing"
 
-            function updateModel() {
+            function syncRemote() {
                 if (!arkzilla.password.length && arkzilla.login != 'anonymous') {
                     passUI.open()
                 } else {
                     ftpView.state = "syncing"
-                    arkzilla.syncModel()
+                    arkzilla.syncRemoteBackups()
                 }
             }
 
             delegate: itemDelegate
-            model: ListModel {}
+            model: ftpModel
 
             PullToRefresh {
                 id: refreshHeader
@@ -67,10 +67,10 @@ Pane {
                 visible: (ftpView.count == 0 && ftpView.state == "normal") ? true : false
             }
 
-            onDragEnded: if (refreshHeader.refresh && ftpView.state == "normal") { updateModel() }
+            onDragEnded: if (refreshHeader.refresh && ftpView.state == "normal") { syncRemote() }
 
             Component.onCompleted: {
-                arkzilla.syncWithLocal()
+                arkzilla.syncLocalBackups()
             }
 
             states: [
@@ -100,6 +100,7 @@ Pane {
             property alias progress: progressBar.value
             property alias indeterminate: progressBar.indeterminate
             property alias statusText: labelStatus.text
+            property bool isLocal: model.local
 
             Rectangle {
                 id: innerContainer
@@ -133,7 +134,7 @@ Pane {
                         Layout.fillHeight: true
                         Layout.margins: 2
                         width: 10
-                        color: model.local ? Material.color(Material.Green) : Material.color(Material.Red)
+                        color: isLocal ? Material.color(Material.Green) : Material.color(Material.Red)
                     }
 
                     Column {
@@ -149,7 +150,7 @@ Pane {
                         ToolTip.timeout: 5000
                         ToolTip.visible: hovered
                         color: Material.color(Material.Red)
-                        visible: model.local ? true : false
+                        visible: isLocal ? true : false
                         enabled: ftpView.state == "normal"
                         opacity: ftpView.state == "processing" ? 0.5 : 1
                         onClicked: {
@@ -176,7 +177,7 @@ Pane {
                         ToolTip.timeout: 5000
                         ToolTip.visible: hovered
                         color: Material.color(Material.Green)
-                        visible: !model.local
+                        visible: !isLocal
                         enabled: ftpView.state == "normal"
                         opacity: ftpView.state == "processing" ? 0.5 : 1
                         onClicked: {
@@ -195,7 +196,7 @@ Pane {
                         ToolTip.timeout: 5000
                         ToolTip.visible: hovered
                         color: Material.color(Material.Orange)
-                        visible: model.local
+                        visible: isLocal
                         enabled: ftpView.state == "normal"
                         opacity: ftpView.state == "processing" ? 0.5 : 1
                         onClicked: {
@@ -219,7 +220,7 @@ Pane {
                     to: 100
                     value: 0
                     visible: ((value > 0) || indeterminate) ? true : false
-                    opacity: 0.4
+                    opacity: 0.5
                     z: 1
                 }
             }
@@ -229,16 +230,17 @@ Pane {
     Connections {
         target: arkzilla
 
+        readonly property int localRole: Qt.UserRole + 1
+        readonly property int nameRole: Qt.UserRole + 2
+        readonly property int dataRole: Qt.UserRole + 3
+        readonly property int fnameRole: Qt.UserRole + 4
+
         onSyncError: {
             toast.show(error, Material.color(Material.Red).toString())
-            arkzilla.syncWithLocal()
+            arkzilla.syncLocalBackups()
         }
 
         onSyncComplete: {
-            ftpView.model.clear()
-            model.forEach(function(elem) {
-                ftpView.model.append(elem)
-            })
             ftpView.state = "normal"
         }
 
@@ -248,8 +250,9 @@ Pane {
         }
 
         onDownloadComplete: {
-            ftpView.model.setProperty(ftpView.currentIndex, 'local', true)
-            toast.show(ftpView.model.get(ftpView.currentIndex).filename + qsTr(': download complete'))
+            var index = ftpModel.index(ftpView.currentIndex, undefined)
+            ftpModel.setData(index, true, localRole)
+            toast.show(ftpModel.data(index, fnameRole) + qsTr(': download complete'))
             ftpView.state = "normal"
         }
 
@@ -263,8 +266,9 @@ Pane {
         }
 
         onRemoveComplete: {
-            ftpView.model.setProperty(ftpView.currentIndex, 'local', false)
-            toast.show(ftpView.model.get(ftpView.currentIndex).filename + qsTr(': successfuly removed'))
+            var index = ftpModel.index(ftpView.currentIndex, undefined)
+            ftpModel.setData(index, false, localRole)
+            toast.show(ftpModel.data(index, fnameRole) + qsTr(': successfuly removed'))
             ftpView.state = "normal"
         }
 
@@ -278,7 +282,8 @@ Pane {
         }
 
         onUnpackComplete: {
-            var filename = ftpView.model.get(ftpView.currentIndex).filename
+            var index = ftpModel.index(ftpView.currentIndex, undefined)
+            var filename = ftpModel.data(index, fnameRole)
             ftpView.state = "normal"
         }
 

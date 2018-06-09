@@ -7,11 +7,11 @@ import inspect
 import logging
 import time
 
-
 from PyQt5.QtGui import QGuiApplication
 from PyQt5.QtQml import QQmlApplicationEngine
 from PyQt5.QtCore import QObject, QRunnable, QThreadPool, QSettings
 from PyQt5.QtCore import pyqtSignal, pyqtSlot, pyqtProperty
+from PyQt5.QtCore import QAbstractListModel, QSortFilterProxyModel, QModelIndex, Qt
 
 from ftplib import FTP
 from shutil import which, unpack_archive
@@ -350,13 +350,13 @@ class Client(QObject):
 
 class ARKZilla(QObject):
     '''
-    Main class
+    Main class. Glue for QML. Bindings, slots, thread launcher
     '''
 
     connectionError = pyqtSignal(str, arguments=['error'])
     connectionSuccess = pyqtSignal()
     syncError = pyqtSignal(str, arguments=['error'])
-    syncComplete = pyqtSignal(list, arguments=['model'])
+    syncComplete = pyqtSignal()
     downloadError = pyqtSignal(str, arguments=['error'])
     downloadComplete = pyqtSignal()
     downloadProgress = pyqtSignal(int, arguments=['percent'])
@@ -466,32 +466,32 @@ class ARKZilla(QObject):
         self.__threadpool.start(worker)
 
     @pyqtSlot()
-    def syncModel(self):
+    def syncRemoteBackups(self):
         """
         Slot for getting remote files list in thread
-        Send results to syncWithLocal slot
+        Send result to syncLocalBackups slot
         """
         worker = Worker(self.__client.listRemote,
                         host=self.host,
                         login=self.login,
                         password=self.password,
                         remote=self.remotePath)
-        worker.signals.result.connect(self.syncWithLocal)
+        worker.signals.result.connect(self.syncLocalBackups)
         worker.signals.error.connect(self.syncError)
         self.__threadpool.start(worker)
 
     @pyqtSlot()
     @pyqtSlot(object)
-    def syncWithLocal(self, remote=list()):
+    def syncLocalBackups(self, remote=list()):
         """
         Merge remote data with local in one model.
-        Sort items by date, mark local files and send results to ListView
 
-        :param remote: list of remote files. come from syncModel
+        :param remote: list of remote files. come from syncRemoteBackups
         """
         local = self.__client.listLocal()
 
-        model = []
+        ftpModel.clear()
+
         # Join and prepare two lists
         for item in list(set(local + remote)):
             # Is file downloaded?
@@ -501,19 +501,11 @@ class ARKZilla(QObject):
             dateRaw = item[:-4].split('_', 1)[1:].pop()
             date = time.strftime("%Y.%m.%d %H:%M",
                                  time.strptime(dateRaw, "%d.%m.%Y_%H.%M.%S"))
+
             # Append to final model
-            model.append({
-                        'local': local,
-                        'name': name,
-                        'date': date,
-                        'filename': item
-                        })
+            ftpModel.append(local, name, date, item)
 
-        # Sort by date, and reverse list
-        model.sort(key=lambda r: time.strptime(r['date'], "%Y.%m.%d %H:%M"), reverse=True)
-
-        # Send to ListView
-        self.syncComplete.emit(model)
+        self.syncComplete.emit()
 
     @pyqtSlot(str)
     def download(self, fname):
@@ -563,6 +555,69 @@ class ARKZilla(QObject):
         self.__threadpool.start(worker)
 
 
+class FtpModel(QAbstractListModel):
+    """
+    Model for FtpView
+    """
+
+    localRole = Qt.UserRole + 1
+    nameRole = Qt.UserRole + 2
+    dateRole = Qt.UserRole + 3
+    fnameRole = Qt.UserRole + 4
+
+    def __init__(self, model=[], parent=None):
+        super(FtpModel, self).__init__(parent)
+        self.__model = model
+
+    def rowCount(self, parent=QModelIndex()):
+        return len(self.__model)
+
+    def data(self, index, role):
+        if role in self.roleNames():
+            item = self.__model[index.row()]
+            return item.get(role)
+
+    def setData(self, index, value, role):
+        if role in self.roleNames():
+            self.__model[index.row()][role] = value
+            self.dataChanged.emit(index, index)
+            return True
+        return False
+
+    def roleNames(self):
+        return {FtpModel.localRole: b'local',
+                FtpModel.nameRole: b'name',
+                FtpModel.dateRole: b'date',
+                FtpModel.fnameRole: b'filename'}
+
+    def clear(self):
+        """
+        Clear model.
+        FIXME: For some reason beginResetModel cause segfault
+        """
+        self.beginRemoveRows(QModelIndex(), 0, self.rowCount() - 1)
+        self.__model = []
+        self.endRemoveRows()
+
+    def append(self, local, name, date, filename):
+        """
+        Append list item to the model
+
+        :param local: bool Backup is downloaded
+        :param name: str Short name of backup
+        :param date: str Formatted date of backup
+        :param filename: str File name of backup
+        """
+        pos = self.rowCount()
+
+        self.beginInsertRows(QModelIndex(), pos, pos)
+        self.__model.append({FtpModel.localRole: local,
+                             FtpModel.nameRole: name,
+                             FtpModel.dateRole: date,
+                             FtpModel.fnameRole: filename})
+        self.endInsertRows()
+
+
 if __name__ == "__main__":
     # Set Material Design style
     os.environ["QT_QUICK_CONTROLS_STYLE"] = "Material"
@@ -575,11 +630,20 @@ if __name__ == "__main__":
     app = QGuiApplication(sys.argv)
     app.setOrganizationName(COMPANY)
     app.setApplicationName(sys.argv[0])
+    engine = QQmlApplicationEngine()
 
     arkzilla = ARKZilla()
+    ftpModel = FtpModel()
 
-    engine = QQmlApplicationEngine()
+    ftpProxyModel = QSortFilterProxyModel()
+    ftpProxyModel.setSourceModel(ftpModel)
+    ftpProxyModel.setSortRole(FtpModel.dateRole)
+    ftpProxyModel.setDynamicSortFilter(True)
+    ftpProxyModel.sort(0, Qt.DescendingOrder)
+
     engine.rootContext().setContextProperty('arkzilla', arkzilla)
+    engine.rootContext().setContextProperty('ftpModel', ftpProxyModel)
+
     engine.load("main.qml")
     engine.quit.connect(app.quit)
 

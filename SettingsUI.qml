@@ -18,6 +18,7 @@ Pane {
         arkzilla.toolsPath = toolsPath.text
         arkzilla.darkTheme = darkTheme.checked
 
+        arkzilla.syncLocalBackups()
         stackWindow.pop()
         toast.show(qsTr('Settings saved'))
     }
@@ -44,6 +45,8 @@ Pane {
             columns: 3
             columnSpacing: 12
             width: (parent.width > 800) ? Math.min(parent.width*0.66, 800) : parent.width
+
+            state: 'normal'
 
             LabelSeparator {
                 Layout.columnSpan: 3
@@ -134,7 +137,6 @@ Pane {
                             return
                         }
                         testInProgress.running = true
-                        testConnection.contentItem.visible = false
                         arkzilla.testConnection(host.text, login.text, password.text)
                     }
                     BusyIndicator {
@@ -222,19 +224,30 @@ Pane {
                 host.forceActiveFocus()
             }
 
+            states: [
+                State {
+                    name: 'testing'; when: testInProgress.running
+                    PropertyChanges { target: testConnection; enabled: false }
+                    PropertyChanges { target: testConnection.contentItem; visible: false }
+                },
+                State {
+                    name: 'normal'; when: !testInProgress.running
+                    PropertyChanges { target: testConnection; enabled: true }
+                    PropertyChanges { target: testConnection.contentItem; visible: true }
+                }
+            ]
+
             Connections {
                 target: arkzilla
 
                 onConnectionSuccess: {
                     testInProgress.running = false
-                    testConnection.contentItem.visible = true
                     toast.show(qsTr('Connection successful'),
                             Material.color(Material.Green).toString())
                 }
 
                 onConnectionError: {
                     testInProgress.running = false
-                    testConnection.contentItem.visible = true
                     toast.show(qsTr('Connection fail: ') + error,
                             Material.color(Material.Red).toString())
                 }
