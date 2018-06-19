@@ -36,6 +36,10 @@ Pane {
         contentWidth: parent.width
         contentHeight: gridLayout.height
 
+        Keys.onEscapePressed: {
+            stackWindow.pop()
+        }
+
         GridLayout {
             id: gridLayout
             anchors.horizontalCenter: parent.horizontalCenter
