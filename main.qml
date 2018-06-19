@@ -52,7 +52,7 @@ ApplicationWindow {
     StackView {
         id: stackWindow
         anchors.fill: parent
-        initialItem: ftpManagerUI
+        initialItem: backupUI
 
         Component.onCompleted: {
             if (!arkzilla.host.length) {
@@ -60,7 +60,7 @@ ApplicationWindow {
             }
         }
 
-        Component { id: ftpManagerUI; FtpManagerUI {} }
+        Component { id: backupUI; BackupUI {} }
         Component { id: settingsUI; SettingsUI {} }
     }
 

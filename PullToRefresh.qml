@@ -40,12 +40,12 @@ Item {
 
     states: [
         State {
-            name: "normal"; when: ftpView.contentY >= -pullLabel.height/2
+            name: "normal"; when: parent.contentY >= -pullLabel.height/2
             PropertyChanges { target: pullLabel; opacity: 0; }
             PropertyChanges { target: refreshIcon; rotation: 0; }
         },
         State {
-            name: "pulled"; when: ftpView.contentY < -pullLabel.height/2
+            name: "pulled"; when: parent.contentY < -pullLabel.height/2
             PropertyChanges { target: pullLabel; opacity: 1; }
             PropertyChanges { target: refreshIcon; rotation: 180; }
         }

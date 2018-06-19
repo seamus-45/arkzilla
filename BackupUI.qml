@@ -7,13 +7,13 @@ import QtGraphicalEffects 1.0
 Pane {
     padding: 0
 
-    property string name: 'ftpview'
+    property string name: 'backupview'
     property string title: arkzilla.host.length ? mainWindow.appName + ' (' + arkzilla.host + ')' : mainWindow.appName
 
     StackView.onRemoved: mainWindow.title = stackWindow.currentItem.title
     StackView.onActivated: mainWindow.title = title
 
-    PassUI { id: passUI; onAccepted: ftpView.syncRemote() }
+    PassUI { id: passUI; onAccepted: backupView.syncRemote() }
 
     FastBlur {
         anchors.fill: layout
@@ -21,7 +21,7 @@ Pane {
         source: layout
         radius: 5
         z: 10
-        visible: ftpView.state == "syncing"
+        visible: backupView.state == "syncing"
 
         BusyIndicator { anchors.centerIn: parent }
         MouseArea { anchors.fill: parent; hoverEnabled: true; }
@@ -33,7 +33,7 @@ Pane {
         anchors.margins: 20
 
         ListView {
-            id: ftpView
+            id: backupView
             Layout.alignment: Qt.AlignHCenter
             Layout.maximumWidth: 600
             Layout.fillHeight: true
@@ -45,29 +45,29 @@ Pane {
                 if (!arkzilla.password.length && arkzilla.login != 'anonymous') {
                     passUI.open()
                 } else {
-                    ftpView.state = "syncing"
+                    backupView.state = "syncing"
                     arkzilla.syncRemoteBackups()
                 }
             }
 
             delegate: itemDelegate
-            model: ftpModel
+            model: backupModel
 
             PullToRefresh {
                 id: refreshHeader
                 text: qsTr('Refresh')
-                y: -ftpView.contentY - height
-                visible: ftpView.state == "normal"
+                y: -backupView.contentY - height
+                visible: backupView.state == "normal"
             }
 
             Label {
                 id: refreshLabel
                 anchors.centerIn: parent
                 text: qsTr('Pull to refresh')
-                visible: (ftpView.count == 0 && ftpView.state == "normal") ? true : false
+                visible: (backupView.count == 0 && backupView.state == "normal") ? true : false
             }
 
-            onDragEnded: if (refreshHeader.refresh && ftpView.state == "normal") { syncRemote() }
+            onDragEnded: if (refreshHeader.refresh && backupView.state == "normal") { syncRemote() }
 
             Component.onCompleted: {
                 arkzilla.syncLocalBackups()
@@ -77,9 +77,9 @@ Pane {
                 State { name: "syncing" },
                 State { name: "processing" },
                 State { name: "normal"
-                    PropertyChanges { target: ftpView.currentItem; restoreEntryValues: false; indeterminate: false }
-                    PropertyChanges { target: ftpView.currentItem; restoreEntryValues: false; progress: 0 }
-                    PropertyChanges { target: ftpView.currentItem; restoreEntryValues: false; statusText: '' }
+                    PropertyChanges { target: backupView.currentItem; restoreEntryValues: false; indeterminate: false }
+                    PropertyChanges { target: backupView.currentItem; restoreEntryValues: false; progress: 0 }
+                    PropertyChanges { target: backupView.currentItem; restoreEntryValues: false; statusText: '' }
                 }
             ]
         }
@@ -151,12 +151,12 @@ Pane {
                         ToolTip.visible: hovered
                         color: Material.color(Material.Red)
                         visible: isLocal ? true : false
-                        enabled: ftpView.state == "normal"
-                        opacity: ftpView.state == "processing" ? 0.5 : 1
+                        enabled: backupView.state == "normal"
+                        opacity: backupView.state == "processing" ? 0.5 : 1
                         onClicked: {
-                            ftpView.state = "processing"
+                            backupView.state = "processing"
                             labelStatus.text = "Removing"
-                            ftpView.currentIndex = index
+                            backupView.currentIndex = index
                             arkzilla.remove(model.filename)
                         }
                     }
@@ -178,12 +178,12 @@ Pane {
                         ToolTip.visible: hovered
                         color: Material.color(Material.Green)
                         visible: !isLocal
-                        enabled: ftpView.state == "normal"
-                        opacity: ftpView.state == "processing" ? 0.5 : 1
+                        enabled: backupView.state == "normal"
+                        opacity: backupView.state == "processing" ? 0.5 : 1
                         onClicked: {
-                            ftpView.state = "processing"
+                            backupView.state = "processing"
                             labelStatus.text = "Downloading"
-                            ftpView.currentIndex = index
+                            backupView.currentIndex = index
                             arkzilla.download(model.filename)
                         }
                     }
@@ -197,12 +197,12 @@ Pane {
                         ToolTip.visible: hovered
                         color: Material.color(Material.Orange)
                         visible: isLocal
-                        enabled: ftpView.state == "normal"
-                        opacity: ftpView.state == "processing" ? 0.5 : 1
+                        enabled: backupView.state == "normal"
+                        opacity: backupView.state == "processing" ? 0.5 : 1
                         onClicked: {
-                            ftpView.state = "processing"
+                            backupView.state = "processing"
                             labelStatus.text = "Unpacking"
-                            ftpView.currentIndex = index
+                            backupView.currentIndex = index
                             indeterminate = true
                             arkzilla.unpack(model.filename)
                         }
@@ -241,56 +241,56 @@ Pane {
         }
 
         onSyncComplete: {
-            ftpView.state = "normal"
+            backupView.state = "normal"
         }
 
         onDownloadError: {
             toast.show(error, Material.color(Material.Red).toString())
-            ftpView.state = "normal"
+            backupView.state = "normal"
         }
 
         onDownloadComplete: {
-            var index = ftpModel.index(ftpView.currentIndex, undefined)
-            ftpModel.setData(index, true, localRole)
-            toast.show(ftpModel.data(index, fnameRole) + qsTr(': download complete'))
-            ftpView.state = "normal"
+            var index = backupModel.index(backupView.currentIndex, undefined)
+            backupModel.setData(index, true, localRole)
+            toast.show(backupModel.data(index, fnameRole) + qsTr(': download complete'))
+            backupView.state = "normal"
         }
 
         onDownloadProgress: {
-            ftpView.currentItem.progress = percent
+            backupView.currentItem.progress = percent
         }
 
         onRemoveError: {
             toast.show(error, Material.color(Material.Red).toString())
-            ftpView.state = "normal"
+            backupView.state = "normal"
         }
 
         onRemoveComplete: {
-            var index = ftpModel.index(ftpView.currentIndex, undefined)
-            ftpModel.setData(index, false, localRole)
-            toast.show(ftpModel.data(index, fnameRole) + qsTr(': successfuly removed'))
-            ftpView.state = "normal"
+            var index = backupModel.index(backupView.currentIndex, undefined)
+            backupModel.setData(index, false, localRole)
+            toast.show(backupModel.data(index, fnameRole) + qsTr(': successfuly removed'))
+            backupView.state = "normal"
         }
 
         onRemoveProgress: {
-            ftpView.currentItem.progress = percent
+            backupView.currentItem.progress = percent
         }
 
         onUnpackError: {
             toast.show(error, Material.color(Material.Red).toString())
-            ftpView.state = "normal"
+            backupView.state = "normal"
         }
 
         onUnpackComplete: {
-            var index = ftpModel.index(ftpView.currentIndex, undefined)
-            var filename = ftpModel.data(index, fnameRole)
-            ftpView.state = "normal"
+            var index = backupModel.index(backupView.currentIndex, undefined)
+            var filename = backupModel.data(index, fnameRole)
+            backupView.state = "normal"
         }
 
         onJavaNotFound: {
             toast.show(qsTr('Java Runtime Environment not found. Please download and install it: ') +
                 '<a href="https://java.com/download">https://java.com/download</a>', undefined, 10000)
-            ftpView.state = "normal"
+            backupView.state = "normal"
         }
     }
 }

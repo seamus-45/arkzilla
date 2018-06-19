@@ -234,7 +234,7 @@ class Client(QObject):
 
     def download(self, progress_callback, host, login, password, remote, filename):
         """
-        Download file with progress callback
+        Download backup with progress callback
         """
         ftp = FTP()
         ftp.connect(host, timeout=5)
@@ -257,7 +257,7 @@ class Client(QObject):
 
     def remove(self, progress_callback, filename):
         """
-        Remove downloaded file and unpacked data with progress callback
+        Remove downloaded backup and unpacked data with progress callback
         """
         dataDir = os.path.join(self.__dataPath, filename)
         backup = os.path.join(self.__downloadPath, filename)
@@ -468,7 +468,7 @@ class ARKZilla(QObject):
     @pyqtSlot()
     def syncRemoteBackups(self):
         """
-        Slot for getting remote files list in thread
+        Slot for getting remote backup list in thread
         Send result to syncLocalBackups slot
         """
         worker = Worker(self.__client.listRemote,
@@ -484,13 +484,13 @@ class ARKZilla(QObject):
     @pyqtSlot(object)
     def syncLocalBackups(self, remote=list()):
         """
-        Merge remote data with local in one model.
+        Merge remote backups with local in one model.
 
-        :param remote: list of remote files. come from syncRemoteBackups
+        :param remote: list of remote backups. come from syncRemoteBackups
         """
         local = self.__client.listLocal()
 
-        ftpModel.clear()
+        backupModel.clear()
 
         # Join and prepare two lists
         for item in list(set(local + remote)):
@@ -503,7 +503,7 @@ class ARKZilla(QObject):
                                  time.strptime(dateRaw, "%d.%m.%Y_%H.%M.%S"))
 
             # Append to final model
-            ftpModel.append(local, name, date, item)
+            backupModel.append(local, name, date, item)
 
         self.syncComplete.emit()
 
@@ -555,9 +555,9 @@ class ARKZilla(QObject):
         self.__threadpool.start(worker)
 
 
-class FtpModel(QAbstractListModel):
+class BackupModel(QAbstractListModel):
     """
-    Model for FtpView
+    Model for BackupUI
     """
 
     localRole = Qt.UserRole + 1
@@ -566,7 +566,7 @@ class FtpModel(QAbstractListModel):
     fnameRole = Qt.UserRole + 4
 
     def __init__(self, model=[], parent=None):
-        super(FtpModel, self).__init__(parent)
+        super(BackupModel, self).__init__(parent)
         self.__model = model
 
     def rowCount(self, parent=QModelIndex()):
@@ -585,10 +585,10 @@ class FtpModel(QAbstractListModel):
         return False
 
     def roleNames(self):
-        return {FtpModel.localRole: b'local',
-                FtpModel.nameRole: b'name',
-                FtpModel.dateRole: b'date',
-                FtpModel.fnameRole: b'filename'}
+        return {BackupModel.localRole: b'local',
+                BackupModel.nameRole: b'name',
+                BackupModel.dateRole: b'date',
+                BackupModel.fnameRole: b'filename'}
 
     def clear(self):
         """
@@ -611,10 +611,10 @@ class FtpModel(QAbstractListModel):
         pos = self.rowCount()
 
         self.beginInsertRows(QModelIndex(), pos, pos)
-        self.__model.append({FtpModel.localRole: local,
-                             FtpModel.nameRole: name,
-                             FtpModel.dateRole: date,
-                             FtpModel.fnameRole: filename})
+        self.__model.append({BackupModel.localRole: local,
+                             BackupModel.nameRole: name,
+                             BackupModel.dateRole: date,
+                             BackupModel.fnameRole: filename})
         self.endInsertRows()
 
 
@@ -633,16 +633,16 @@ if __name__ == "__main__":
     engine = QQmlApplicationEngine()
 
     arkzilla = ARKZilla()
-    ftpModel = FtpModel()
+    backupModel = BackupModel()
 
-    ftpProxyModel = QSortFilterProxyModel()
-    ftpProxyModel.setSourceModel(ftpModel)
-    ftpProxyModel.setSortRole(FtpModel.dateRole)
-    ftpProxyModel.setDynamicSortFilter(True)
-    ftpProxyModel.sort(0, Qt.DescendingOrder)
+    backupProxyModel = QSortFilterProxyModel()
+    backupProxyModel.setSourceModel(backupModel)
+    backupProxyModel.setSortRole(BackupModel.dateRole)
+    backupProxyModel.setDynamicSortFilter(True)
+    backupProxyModel.sort(0, Qt.DescendingOrder)
 
     engine.rootContext().setContextProperty('arkzilla', arkzilla)
-    engine.rootContext().setContextProperty('ftpModel', ftpProxyModel)
+    engine.rootContext().setContextProperty('backupModel', backupProxyModel)
 
     engine.load("main.qml")
     engine.quit.connect(app.quit)
