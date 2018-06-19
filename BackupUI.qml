@@ -7,12 +7,6 @@ import QtGraphicalEffects 1.0
 Pane {
     padding: 0
 
-    property string name: 'backupview'
-    property string title: arkzilla.host.length ? mainWindow.appName + ' (' + arkzilla.host + ')' : mainWindow.appName
-
-    StackView.onRemoved: mainWindow.title = stackWindow.currentItem.title
-    StackView.onActivated: mainWindow.title = title
-
     PassUI { id: passUI; onAccepted: backupView.syncRemote() }
 
     FastBlur {

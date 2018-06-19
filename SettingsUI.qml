@@ -5,8 +5,6 @@ import QtQuick.Layouts 1.3
 
 Pane {
     id: settingsPane
-    property string name: 'settings'
-    property string title: qsTr('Settings')
 
     function saveSettings() {
         arkzilla.storePass = storePass.checked
@@ -23,8 +21,8 @@ Pane {
         toast.show(qsTr('Settings saved'))
     }
 
-    StackView.onRemoved: mainWindow.title = stackWindow.currentItem.title
-    StackView.onActivated: mainWindow.title = title
+    StackView.onActivating: mainWindow.title = qsTr('Settings')
+    StackView.onDeactivating: mainWindow.title = mainWindow.instanceName
 
     FolderDialog {
         id: folderDialog

@@ -10,7 +10,7 @@ ApplicationWindow {
     width: 1200
     height: 800
 
-    title: appName
+    title: instanceName
 
     Material.theme: arkzilla.darkTheme ? Material.Dark : Material.Light
     Material.primary: Material.LightGreen
@@ -21,7 +21,8 @@ ApplicationWindow {
 
     font.pixelSize: 18
 
-    property string appName: 'ARKZilla'
+    readonly property string appName: 'ARKZilla'
+    readonly property string instanceName: arkzilla.host.length ? appName + ' (' + arkzilla.host + ')' : appName
 
     header: ToolBar {
         RowLayout {
@@ -38,7 +39,7 @@ ApplicationWindow {
                 ToolTip.delay: 1000
                 ToolTip.timeout: 5000
                 ToolTip.visible: hovered
-                visible: stackWindow.currentItem.name != 'settings'
+                visible: mainWindow.title != qsTr('Settings')
                 onClicked: stackWindow.push(settingsUI)
             }
         }
