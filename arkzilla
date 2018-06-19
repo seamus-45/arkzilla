@@ -193,7 +193,6 @@ class Client(QObject):
         ftp.connect(host, timeout=5)
         ftp.login(user=login, passwd=password)
         ftp.close()
-        return True
 
     def listRemote(self, progress_callback, host, login, password, remote):
         """
@@ -212,19 +211,29 @@ class Client(QObject):
             # Only add entries with timestamps
             if '_' in fname:
                 result.append(fname)
-
         return result
 
-    def listLocal(self):
+    def listLocal(self, progress_callback, remote=[]):
         """
-        Get list of downloaded backups
+        Get list of downloaded backups and merge with remote
         """
-        result = []
+        local = []
         for fname in os.listdir(self.__downloadPath):
             if os.path.isfile(os.path.join(self.__downloadPath, fname)):
-                result.append(fname)
+                local.append(fname)
 
-        return result
+        backupModel.clear()
+        # Join and prepare two lists
+        for item in list(set(local + remote)):
+            # Is file downloaded?
+            local = self.isLocal(item)
+            name = item.split('_')[:1].pop()
+            # Format date and time
+            dateRaw = item[:-4].split('_', 1)[1:].pop()
+            date = time.strftime("%Y.%m.%d %H:%M",
+                                 time.strptime(dateRaw, "%d.%m.%Y_%H.%M.%S"))
+            # Append to final model
+            backupModel.append(local, name, date, item)
 
     def isLocal(self, file):
         """
@@ -450,7 +459,7 @@ class ARKZilla(QObject):
     @pyqtSlot(str, str, str)
     def testConnection(self, host, login, password):
         """
-        Slot for test connection thread
+        Thread for test connection
 
         :param host: Host from settingsUI
         :param login: Login from settingsUI
@@ -468,7 +477,7 @@ class ARKZilla(QObject):
     @pyqtSlot()
     def syncRemoteBackups(self):
         """
-        Slot for getting remote backup list in thread
+        Thread for getting remote backup list
         Send result to syncLocalBackups slot
         """
         worker = Worker(self.__client.listRemote,
@@ -484,33 +493,20 @@ class ARKZilla(QObject):
     @pyqtSlot(object)
     def syncLocalBackups(self, remote=list()):
         """
-        Merge remote backups with local in one model.
+        Thread for merge remote backups with local in one model.
 
         :param remote: list of remote backups. come from syncRemoteBackups
         """
-        local = self.__client.listLocal()
-
-        backupModel.clear()
-
-        # Join and prepare two lists
-        for item in list(set(local + remote)):
-            # Is file downloaded?
-            local = self.__client.isLocal(item)
-            name = item.split('_')[:1].pop()
-            # Format date and time
-            dateRaw = item[:-4].split('_', 1)[1:].pop()
-            date = time.strftime("%Y.%m.%d %H:%M",
-                                 time.strptime(dateRaw, "%d.%m.%Y_%H.%M.%S"))
-
-            # Append to final model
-            backupModel.append(local, name, date, item)
-
-        self.syncComplete.emit()
+        worker = Worker(self.__client.listLocal,
+                        remote=remote)
+        worker.signals.result.connect(self.syncComplete)
+        worker.signals.error.connect(self.syncError)
+        self.__threadpool.start(worker)
 
     @pyqtSlot(str)
     def download(self, fname):
         """
-        Slot for downloading remote file in thread
+        Thread for downloading remote file
 
         :param fname: filename to download
         """
@@ -528,7 +524,7 @@ class ARKZilla(QObject):
     @pyqtSlot(str)
     def remove(self, fname):
         """
-        Slot for removing local data in thread
+        Thread for removing local data
 
         :param fname: filename to remove
         """
@@ -541,7 +537,7 @@ class ARKZilla(QObject):
     @pyqtSlot(str)
     def unpack(self, fname):
         """
-        Slot for unpacking local data in thread
+        Thread for unpacking local data
 
         :param fname: filename to unpack
         """
