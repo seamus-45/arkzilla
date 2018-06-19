@@ -55,7 +55,7 @@ Pane {
                 Layout.rowSpan: 7
                 Layout.fillHeight: true
                 width: 4
-                color: Material.color(Material.Green)
+                color: Material.accent
             }
             Label {
                 Layout.alignment: Qt.AlignRight
@@ -155,7 +155,7 @@ Pane {
             Rectangle {
                 Layout.fillHeight: true
                 width: 4
-                color: Material.color(Material.Green)
+                color: Material.accent
             }
             Label {
                 id: toolsLabel
@@ -189,7 +189,7 @@ Pane {
             Rectangle {
                 Layout.fillHeight: true
                 width: 4
-                color: Material.color(Material.Green)
+                color: Material.accent
             }
             Switch {
                 id: darkTheme

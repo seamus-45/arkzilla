@@ -1,4 +1,5 @@
 import QtQuick 2.7
+import QtQuick.Controls.Material 2.2
 
 /**
   * adapted from StackOverflow:
@@ -28,7 +29,7 @@ ListView {
       */
 
     readonly property real defaultDuration: 3000
-    readonly property string defaultColor: '#222222'
+    readonly property string defaultColor: Material.foreground
 
     id: root
 

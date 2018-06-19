@@ -108,9 +108,9 @@ Dialog {
         highlightFollowsCurrentItem: false
         highlight: Rectangle {
             y: folderView.currentItem ? folderView.currentItem.y : 0
-            height: folderView.currentItem ?folderView.currentItem.height : 0
+            height: folderView.currentItem ? folderView.currentItem.height : 0
             width: folderView.width
-            color: Material.color(Material.LightGreen);
+            color: Material.accent
             opacity: 0.5
         }
 

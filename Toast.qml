@@ -1,4 +1,5 @@
 import QtQuick 2.7
+import QtQuick.Controls.Material 2.2
 
 /**
  * adapted from StackOverflow:
@@ -43,8 +44,8 @@ Rectangle {
         id: message
         text: parent.text
         textFormat: Text.StyledText
-        color: "white"
-        linkColor: '#00bcd4'
+        color: Material.background
+        linkColor: Material.color(Material.Cyan)
         font.pixelSize: mainWindow.font.pixelSize
         wrapMode: Text.Wrap
         horizontalAlignment: Text.AlignHCenter

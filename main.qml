@@ -13,8 +13,8 @@ ApplicationWindow {
     title: instanceName
 
     Material.theme: arkzilla.darkTheme ? Material.Dark : Material.Light
-    Material.primary: Material.LightGreen
-    Material.accent: Material.Green
+    Material.primary: Material.Green
+    Material.accent: Material.LightGreen
     Material.elevation: 6
 
     FontLoader { id: faSolid; source: "fonts/fa-solid-900.ttf"}

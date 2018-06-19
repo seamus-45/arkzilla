@@ -8,7 +8,7 @@ MenuSeparator {
     bottomPadding: 6
 
     property string text
-    property string color: Material.color(Material.Green)
+    property string color: Material.primary
 
     contentItem: Label {
         color: parent.color
