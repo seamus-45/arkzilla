@@ -10,9 +10,9 @@ Pane {
     PassUI { id: passUI; onAccepted: backupView.syncRemote() }
 
     FastBlur {
-        anchors.fill: layout
+        anchors.fill: backupView
 
-        source: layout
+        source: backupView
         radius: 5
         z: 10
         visible: backupView.state == "syncing"
@@ -21,62 +21,55 @@ Pane {
         MouseArea { anchors.fill: parent; hoverEnabled: true; }
     }
 
-    ColumnLayout {
-        id: layout
+    ListView {
+        id: backupView
         anchors.fill: parent
         anchors.margins: 20
 
-        ListView {
-            id: backupView
-            Layout.alignment: Qt.AlignHCenter
-            Layout.maximumWidth: 600
-            Layout.fillHeight: true
-            Layout.fillWidth: true
+        state: "syncing"
 
-            state: "syncing"
-
-            function syncRemote() {
-                if (!arkzilla.password.length && arkzilla.login != 'anonymous') {
-                    passUI.open()
-                } else {
-                    backupView.state = "syncing"
-                    arkzilla.syncRemoteBackups()
-                }
+        function syncRemote() {
+            if (!arkzilla.password.length && arkzilla.login != 'anonymous') {
+                passUI.open()
+            } else {
+                backupView.state = "syncing"
+                arkzilla.syncRemoteBackups()
             }
-
-            delegate: itemDelegate
-            model: backupModel
-
-            PullToRefresh {
-                id: refreshHeader
-                text: qsTr('Refresh')
-                y: -backupView.contentY - height
-                visible: backupView.state == "normal"
-            }
-
-            Label {
-                id: refreshLabel
-                anchors.centerIn: parent
-                text: qsTr('Pull to refresh')
-                visible: (backupView.count == 0 && backupView.state == "normal") ? true : false
-            }
-
-            onDragEnded: if (refreshHeader.refresh && backupView.state == "normal") { syncRemote() }
-
-            Component.onCompleted: {
-                arkzilla.syncLocalBackups()
-            }
-
-            states: [
-                State { name: "syncing" },
-                State { name: "processing" },
-                State { name: "normal"
-                    PropertyChanges { target: backupView.currentItem; restoreEntryValues: false; indeterminate: false }
-                    PropertyChanges { target: backupView.currentItem; restoreEntryValues: false; progress: 0 }
-                    PropertyChanges { target: backupView.currentItem; restoreEntryValues: false; statusText: '' }
-                }
-            ]
         }
+
+        model: backupModel
+
+        delegate: itemDelegate
+
+        PullToRefresh {
+            id: refreshHeader
+            text: qsTr('Refresh')
+            y: -backupView.contentY - height
+            visible: backupView.state == "normal"
+        }
+
+        Label {
+            id: refreshLabel
+            anchors.centerIn: parent
+            text: qsTr('Pull to refresh')
+            visible: (backupView.count == 0 && backupView.state == "normal") ? true : false
+        }
+
+        onDragEnded: if (refreshHeader.refresh && backupView.state == "normal") { syncRemote() }
+
+        Component.onCompleted: {
+            arkzilla.syncLocalBackups()
+        }
+
+        states: [
+            State { name: "syncing" },
+            State { name: "processing" },
+            State { name: "normal"
+                PropertyChanges { target: backupView.currentItem; restoreEntryValues: false; indeterminate: false }
+                PropertyChanges { target: backupView.currentItem; restoreEntryValues: false; progress: 0 }
+                PropertyChanges { target: backupView.currentItem; restoreEntryValues: false; statusText: '' }
+            }
+        ]
     }
 
     Component {
@@ -84,11 +77,9 @@ Pane {
 
         Rectangle {
             id: outerContainer
-
-            anchors.left: parent.left
-            anchors.right: parent.right
-
+            anchors.horizontalCenter: parent.horizontalCenter
             height: innerContainer.height + 6
+            width: (parent.width > 600) ? 600 : parent.width
             color: Material.background
 
             property alias progress: progressBar.value
