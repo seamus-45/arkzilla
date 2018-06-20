@@ -62,6 +62,7 @@ ApplicationWindow {
         }
 
         Component { id: backupUI; BackupUI {} }
+        Component { id: tamedUI; TamedUI {} }
         Component { id: settingsUI; SettingsUI {} }
     }
 

@@ -278,6 +278,8 @@ Pane {
         onUnpackComplete: {
             var index = backupModel.index(backupView.currentIndex, undefined)
             var filename = backupModel.data(index, fnameRole)
+            // TODO: rename fnameRole to backupRole
+            stackWindow.push(tamedUI, {backup: filename})
             backupView.state = "normal"
         }
 

@@ -5,6 +5,7 @@ import sys
 import traceback
 import inspect
 import logging
+import json
 import time
 
 from PyQt5.QtGui import QGuiApplication
@@ -321,6 +322,7 @@ class Client(QObject):
         os.makedirs(dataDir, exist_ok=True)
         args = ['java', '-jar', tools, '--quiet', 'tamed', '--clean', '--write-all-fields', backup, dataDir]
         r = run(args, check=True)
+        # Mark data as completed
         if r.returncode == 0:
             open(os.path.join(dataDir, '.complete'), 'a').close()
 
@@ -356,6 +358,15 @@ class Client(QObject):
 
         return None
 
+    def loadClasses(self, progress_callback, filename):
+        """
+        Load classes.json to model from unpacked backup
+        """
+        dataDir = os.path.join(self.__dataPath, filename)
+        with open(os.path.join(dataDir, 'classes.json'), 'r') as data:
+            classesModel.load(json.load(data))
+            data.close()
+
 
 class ARKZilla(QObject):
     '''
@@ -377,6 +388,8 @@ class ARKZilla(QObject):
     javaNotFound = pyqtSignal()
     themeChanged = pyqtSignal()
     hostChanged = pyqtSignal()
+    loadClassesError = pyqtSignal(str, arguments=['error'])
+    loadClassesFinished = pyqtSignal()
 
     def __init__(self):
         super(ARKZilla, self).__init__()
@@ -550,6 +563,18 @@ class ARKZilla(QObject):
         worker.signals.error.connect(self.unpackError)
         self.__threadpool.start(worker)
 
+    @pyqtSlot(str)
+    def loadClasses(self, fname):
+        """
+        Thread for loading creature classes
+
+        :param fname: backup filename
+        """
+        worker = Worker(self.__client.loadClasses, filename=fname)
+        worker.signals.result.connect(self.loadClassesFinished)
+        worker.signals.error.connect(self.loadClassesError)
+        self.__threadpool.start(worker)
+
 
 class BackupModel(QAbstractListModel):
     """
@@ -614,6 +639,38 @@ class BackupModel(QAbstractListModel):
         self.endInsertRows()
 
 
+class ClassesModel(QAbstractListModel):
+    """
+    Model for TamedUI: classesView
+    """
+    clsRole = Qt.UserRole + 1
+    nameRole = Qt.UserRole + 2
+
+    def __init__(self, model=[], parent=None):
+        super(ClassesModel, self).__init__(parent)
+        self.__model = model
+
+    def rowCount(self, parent=QModelIndex()):
+        return len(self.__model)
+
+    def data(self, index, role):
+        if role in self.roleNames():
+            item = self.__model[index.row()]
+            return item.get(self.roleNames()[role].decode())
+
+    def roleNames(self):
+        return {ClassesModel.clsRole: b'cls',
+                ClassesModel.nameRole: b'name'}
+
+    def load(self, data):
+        """
+        Load model from provided data
+        """
+        self.beginResetModel()
+        self.__model = data
+        self.endResetModel()
+
+
 if __name__ == "__main__":
     # Set Material Design style
     os.environ["QT_QUICK_CONTROLS_STYLE"] = "Material"
@@ -630,6 +687,7 @@ if __name__ == "__main__":
 
     arkzilla = ARKZilla()
     backupModel = BackupModel()
+    classesModel = ClassesModel()
 
     backupProxyModel = QSortFilterProxyModel()
     backupProxyModel.setSourceModel(backupModel)
@@ -637,8 +695,16 @@ if __name__ == "__main__":
     backupProxyModel.setDynamicSortFilter(True)
     backupProxyModel.sort(0, Qt.DescendingOrder)
 
+    classesProxyModel = QSortFilterProxyModel()
+    classesProxyModel.setSourceModel(classesModel)
+    classesProxyModel.setSortRole(ClassesModel.nameRole)
+    classesProxyModel.setSortCaseSensitivity(Qt.CaseInsensitive)
+    classesProxyModel.setDynamicSortFilter(True)
+    classesProxyModel.sort(0, Qt.AscendingOrder)
+
     engine.rootContext().setContextProperty('arkzilla', arkzilla)
     engine.rootContext().setContextProperty('backupModel', backupProxyModel)
+    engine.rootContext().setContextProperty('classesModel', classesProxyModel)
 
     engine.load("main.qml")
     engine.quit.connect(app.quit)
