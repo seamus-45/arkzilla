@@ -242,16 +242,16 @@ Pane {
             Connections {
                 target: arkzilla
 
-                onConnectionSuccess: {
-                    testInProgress.running = false
-                    toast.show(qsTr('Connection successful'),
-                            Material.color(Material.Green).toString())
-                }
-
                 onConnectionError: {
                     testInProgress.running = false
                     toast.show(qsTr('Connection fail: ') + error,
                             Material.color(Material.Red).toString())
+                }
+
+                onConnectionSuccess: {
+                    testInProgress.running = false
+                    toast.show(qsTr('Connection successful'),
+                            Material.color(Material.Green).toString())
                 }
             }
         }

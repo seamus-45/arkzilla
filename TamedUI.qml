@@ -18,6 +18,7 @@ Pane {
 
             property string backup
 
+            clip: true
             focus: true
             activeFocusOnTab: true
 

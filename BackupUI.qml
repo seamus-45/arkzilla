@@ -136,6 +136,14 @@ Pane {
                         Label { id: labelName; text: model.name }
                     }
 
+                    Label {
+                        id: labelStatus
+                        Layout.fillWidth: true
+                        horizontalAlignment: Text.AlignHCenter
+                        color: Material.accent
+                        font.pixelSize: 16
+                    }
+
                     IconButton {
                         id: buttonRemove
                         text: ''
@@ -151,16 +159,8 @@ Pane {
                             backupView.state = "processing"
                             labelStatus.text = "Removing"
                             backupView.currentIndex = index
-                            arkzilla.remove(model.filename)
+                            arkzilla.remove(model.backup)
                         }
-                    }
-
-                    Label {
-                        id: labelStatus
-                        Layout.fillWidth: true
-                        leftPadding: buttonRemove.visible ? 0 : 16
-                        font.pixelSize: 16
-                        color: Material.color(Material.Grey)
                     }
 
                     IconButton {
@@ -178,7 +178,7 @@ Pane {
                             backupView.state = "processing"
                             labelStatus.text = "Downloading"
                             backupView.currentIndex = index
-                            arkzilla.download(model.filename)
+                            arkzilla.download(model.backup)
                         }
                     }
 
@@ -198,7 +198,7 @@ Pane {
                             labelStatus.text = "Unpacking"
                             backupView.currentIndex = index
                             indeterminate = true
-                            arkzilla.unpack(model.filename)
+                            arkzilla.unpack(model.backup)
                         }
                     }
                 }
@@ -214,7 +214,6 @@ Pane {
                     to: 100
                     value: 0
                     visible: ((value > 0) || indeterminate) ? true : false
-                    opacity: 0.5
                     z: 1
                 }
             }
@@ -227,66 +226,58 @@ Pane {
         readonly property int localRole: Qt.UserRole + 1
         readonly property int nameRole: Qt.UserRole + 2
         readonly property int dataRole: Qt.UserRole + 3
-        readonly property int fnameRole: Qt.UserRole + 4
+        readonly property int backupRole: Qt.UserRole + 4
 
-        onSyncError: {
-            toast.show(error, Material.color(Material.Red).toString())
-            arkzilla.syncLocalBackups()
+        onBackupStateProgress: {
+            backupView.currentItem.progress = percent
         }
 
-        onSyncComplete: {
-            backupView.state = "normal"
-        }
-
-        onDownloadError: {
-            toast.show(error, Material.color(Material.Red).toString())
+        onBackupStateFinished: {
             backupView.state = "normal"
         }
 
         onDownloadComplete: {
             var index = backupModel.index(backupView.currentIndex, undefined)
             backupModel.setData(index, true, localRole)
-            toast.show(backupModel.data(index, fnameRole) + qsTr(': download complete'))
-            backupView.state = "normal"
+            toast.show(backupModel.data(index, backupRole) + qsTr(': download complete'))
         }
 
-        onDownloadProgress: {
-            backupView.currentItem.progress = percent
-        }
-
-        onRemoveError: {
+        onDownloadError: {
             toast.show(error, Material.color(Material.Red).toString())
-            backupView.state = "normal"
         }
 
         onRemoveComplete: {
             var index = backupModel.index(backupView.currentIndex, undefined)
             backupModel.setData(index, false, localRole)
-            toast.show(backupModel.data(index, fnameRole) + qsTr(': successfuly removed'))
-            backupView.state = "normal"
+            toast.show(backupModel.data(index, backupRole) + qsTr(': successfuly removed'))
         }
 
-        onRemoveProgress: {
-            backupView.currentItem.progress = percent
-        }
-
-        onUnpackError: {
+        onRemoveError: {
             toast.show(error, Material.color(Material.Red).toString())
-            backupView.state = "normal"
+        }
+
+        onSyncLocalError: {
+            toast.show(error, Material.color(Material.Red).toString())
+        }
+
+        onSyncRemoteError: {
+            toast.show(error, Material.color(Material.Red).toString())
+            arkzilla.syncLocalBackups()
         }
 
         onUnpackComplete: {
             var index = backupModel.index(backupView.currentIndex, undefined)
-            var filename = backupModel.data(index, fnameRole)
-            // TODO: rename fnameRole to backupRole
-            stackWindow.push(tamedUI, {backup: filename})
-            backupView.state = "normal"
+            var backup = backupModel.data(index, backupRole)
+            stackWindow.push(tamedUI, {backup: backup})
+        }
+
+        onUnpackError: {
+            toast.show(error, Material.color(Material.Red).toString())
         }
 
         onJavaNotFound: {
             toast.show(qsTr('Java Runtime Environment not found. Please download and install it: ') +
                 '<a href="https://java.com/download">https://java.com/download</a>', undefined, 10000)
-            backupView.state = "normal"
         }
     }
 }

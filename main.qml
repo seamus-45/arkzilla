@@ -29,12 +29,14 @@ ApplicationWindow {
             anchors.fill: parent
             IconButton {
                 text: ""
+                color: 'white'
                 onClicked: stackWindow.pop()
                 visible: (stackWindow.depth > 1) ? true : false
             }
             Item { Layout.fillWidth: true  }
             IconButton {
                 text: ""
+                color: 'white'
                 ToolTip.text: qsTr("Open settings")
                 ToolTip.delay: 1000
                 ToolTip.timeout: 5000
@@ -46,6 +48,7 @@ ApplicationWindow {
         Label {
             anchors.centerIn: parent
             text: mainWindow.title
+            color: 'white'
             elide: Label.ElideRight
         }
     }

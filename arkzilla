@@ -32,28 +32,11 @@ def log(message):
     """
     func = inspect.currentframe().f_back.f_code
     # Dump the message + the name of this function to the log.
-    logging.debug("%s: %s() in %s:%i" % (
+    logging.debug('%s: %s() in %s:%i' % (
                   message,
                   func.co_name,
                   func.co_filename,
                   func.co_firstlineno))
-
-
-def rpr(data, indent=0, s='  ', color=True):
-    COLOR = '\033[92m' if color else ''
-    DEFAULT = '\033[0m' if color else ''
-    if type(data) is dict:
-        for key, val in data.items():
-            if type(val) in [dict, list]:
-                print(u'{i}{c}{key}{d}:'.format(i=indent*s, key=key, c=COLOR, d=DEFAULT))
-                rpr(val, indent+1, s)
-            else:
-                print(u'{i}{c}{key}{d}: {val}'.format(i=indent*s, key=key, val=val, c=COLOR, d=DEFAULT))
-    elif type(data) is list:
-        for val in data:
-            if type(val) in [dict, list]:
-                rpr(val, indent, s)
-    print("\n")
 
 
 class Progress(object):
@@ -93,7 +76,7 @@ class Progress(object):
 
 
 class Worker(QRunnable):
-    '''
+    """
     Worker thread
 
     Inherits from QRunnable to handler worker thread setup, signals and wrap-up.
@@ -104,7 +87,7 @@ class Worker(QRunnable):
     :param args: Arguments to pass to the callback function
     :param kwargs: Keywords to pass to the callback function
 
-    '''
+    """
 
     def __init__(self, fn, *args, **kwargs):
         super(Worker, self).__init__()
@@ -120,9 +103,9 @@ class Worker(QRunnable):
 
     @pyqtSlot()
     def run(self):
-        '''
+        """
         Initialise the runner function with passed args, kwargs.
-        '''
+        """
 
         # Retrieve args/kwargs here; and fire processing using them
         try:
@@ -139,7 +122,7 @@ class Worker(QRunnable):
 
 
 class WorkerSignals(QObject):
-    '''
+    """
     Defines the signals available from a running worker thread.
 
     Supported signals are:
@@ -156,7 +139,7 @@ class WorkerSignals(QObject):
     progress
         `int` indicating % progress
 
-    '''
+    """
     finished = pyqtSignal()
     error = pyqtSignal(str)
     result = pyqtSignal(object)
@@ -177,82 +160,109 @@ class Client(QObject):
         os.makedirs(self.__downloadPath, exist_ok=True)
         os.makedirs(self.__dataPath, exist_ok=True)
 
-    def updatePrefix(self, prefix):
+    def updatePath(self, path):
         """
-        Update local data path prefixed with remote host name
+        Update local data path by provided value
+
+        :param path: Any string, e.g. remote host name
         """
-        self.__downloadPath = os.path.join(self.__cwd, 'download', prefix)
-        self.__dataPath = os.path.join(self.__cwd, 'data', prefix)
+        self.__downloadPath = os.path.join(self.__cwd, 'download', path)
+        self.__dataPath = os.path.join(self.__cwd, 'data', path)
         os.makedirs(self.__downloadPath, exist_ok=True)
         os.makedirs(self.__dataPath, exist_ok=True)
 
     def testConnection(self, progress_callback, host, login, password):
-        '''
+        """
         Test Connection
-        '''
+
+        :param progress_callback: Callback function for progress
+        :param host: Remote host name
+        :param login: Remote user name
+        :param password: Remote password
+        """
         ftp = FTP()
         ftp.connect(host, timeout=5)
         ftp.login(user=login, passwd=password)
         ftp.close()
 
-    def listRemote(self, progress_callback, host, login, password, remote):
+    def listRemote(self, progress_callback, host, login, password, path):
         """
-        Get list of backups from remote server
+        Get list of backups from path server
+
+        :param progress_callback: Callback function for progress
+        :param host: Remote host name
+        :param login: Remote user name
+        :param password: Remote password
+        :param path: Remote directory path
         """
         ftp = FTP()
         ftp.connect(host, timeout=5)
         ftp.login(user=login, passwd=password)
-        remote = ftp.nlst(os.path.join(remote, '*.ark'))
+        urls = ftp.nlst(os.path.join(path, '*.ark'))
         ftp.close()
 
-        # Return only filenames without path
-        result = []
-        for item in remote:
-            fname = item.split('/')[-1]
+        # Return only backup name without path
+        backups = []
+        for url in urls:
+            backup = url.split('/')[-1]
             # Only add entries with timestamps
-            if '_' in fname:
-                result.append(fname)
-        return result
+            if '_' in backup:
+                backups.append(backup)
+
+        return backups
 
     def listLocal(self, progress_callback, remote=[]):
         """
         Get list of downloaded backups and merge with remote
+
+        :param progress_callback: Callback function for progress
+        :param remote: Dict with remote backups
         """
         local = []
-        for fname in os.listdir(self.__downloadPath):
-            if os.path.isfile(os.path.join(self.__downloadPath, fname)):
-                local.append(fname)
+        for backup in os.listdir(self.__downloadPath):
+            if os.path.isfile(os.path.join(self.__downloadPath, backup)):
+                local.append(backup)
 
         backupModel.clear()
         # Join and prepare two lists
-        for item in list(set(local + remote)):
-            # Is file downloaded?
-            local = self.isLocal(item)
-            name = item.split('_')[:1].pop()
+        for backup in list(set(local + remote)):
+            # Backup is already downloaded?
+            islocal = self.isLocal(backup)
+            name = backup.split('_')[:1].pop()
             # Format date and time
-            dateRaw = item[:-4].split('_', 1)[1:].pop()
-            date = time.strftime("%Y.%m.%d %H:%M",
-                                 time.strptime(dateRaw, "%d.%m.%Y_%H.%M.%S"))
+            dateRaw = backup[:-4].split('_', 1)[1:].pop()
+            date = time.strftime('%Y.%m.%d %H:%M',
+                                 time.strptime(dateRaw, '%d.%m.%Y_%H.%M.%S'))
             # Append to final model
-            backupModel.append(local, name, date, item)
+            backupModel.append(islocal, name, date, backup)
 
-    def isLocal(self, file):
+    def isLocal(self, backup):
         """
-        Return true if downloaded
-        """
-        return os.path.isfile(os.path.join(self.__downloadPath, file))
+        Return True if backup is downloaded
 
-    def download(self, progress_callback, host, login, password, remote, filename):
+        :param backup: Filename of backup
+        """
+        return os.path.isfile(os.path.join(self.__downloadPath, backup))
+
+    def download(self, progress_callback, host, login, password, path, backup):
         """
         Download backup with progress callback
+
+        :param progress_callback: Callback function for progress
+        :param host: Remote host name
+        :param login: Remote user name
+        :param password: Remote password
+        :param path: Remote directory path
+        :param backup: Filename of backup
         """
         ftp = FTP()
         ftp.connect(host, timeout=5)
         ftp.login(user=login, passwd=password)
-        ftp.sendcmd("TYPE i")
-        filesize = ftp.size(os.path.join(remote, filename))
+        ftp.sendcmd('TYPE i')
+        url = os.path.join(path, backup)
+        filesize = ftp.size(url)
         progress = Progress(end=filesize)
-        with open(os.path.join(self.__downloadPath, filename), 'wb') as f:
+        with open(os.path.join(self.__downloadPath, backup), 'wb') as f:
 
             def callback(chunk):
                 f.write(chunk)
@@ -261,21 +271,23 @@ class Client(QObject):
                 if percent:
                     progress_callback.emit(percent)
 
-            ftp.retrbinary('RETR {}'.format(os.path.join(remote, filename)), callback)
+            ftp.retrbinary('RETR {}'.format(url), callback)
         ftp.close()
-        return True
 
-    def remove(self, progress_callback, filename):
+    def remove(self, progress_callback, backup):
         """
         Remove downloaded backup and unpacked data with progress callback
+
+        :param progress_callback: Callback function for progress
+        :param backup: Filename of backup
         """
-        dataDir = os.path.join(self.__dataPath, filename)
-        backup = os.path.join(self.__downloadPath, filename)
+        backupData = os.path.join(self.__dataPath, backup)
+        backup = os.path.join(self.__downloadPath, backup)
 
         # Build list of items to be removed
         paths = list()
-        if os.path.exists(dataDir) and os.path.isdir(dataDir):
-            for root, dirs, files in os.walk(dataDir, topdown=False):
+        if os.path.exists(backupData) and os.path.isdir(backupData):
+            for root, dirs, files in os.walk(backupData, topdown=False):
                 for item in files:
                     paths.append(os.path.join(root, item))
                 for item in dirs:
@@ -293,23 +305,26 @@ class Client(QObject):
             percent = progress.percent()
             if percent:
                 progress_callback.emit(percent)
-        return True
 
-    def unpack(self, progress_callback, filename, tools):
+    def unpack(self, progress_callback, backup, tools):
         """
         Unpack specified backup using ark-tools
+
+        :param progress_callback: Callback function for progress
+        :param backup: Filename of backup
+        :param tools: Path to ark-tools
         """
-        dataDir = os.path.join(self.__dataPath, filename)
-        backup = os.path.join(self.__downloadPath, filename)
+        backupData = os.path.join(self.__dataPath, backup)
+        backup = os.path.join(self.__downloadPath, backup)
         # Check if backup already unpacked
-        if os.path.exists(os.path.join(dataDir, '.complete')):
+        if os.path.exists(os.path.join(backupData, '.complete')):
             return
 
         # Download ark-tools if not exists
-        deftools = os.path.join(self.__cwd, 'tools', 'ark-tools.jar')
+        default = os.path.join(self.__cwd, 'tools', 'ark-tools.jar')
         if not os.path.exists(tools):
-            if os.path.exists(deftools):
-                tools = deftools
+            if os.path.exists(default):
+                tools = default
             else:
                 tools = self.setupTools()
 
@@ -319,12 +334,12 @@ class Client(QObject):
             run(args, check=True)
 
         # Unpack backup
-        os.makedirs(dataDir, exist_ok=True)
-        args = ['java', '-jar', tools, '--quiet', 'tamed', '--clean', '--write-all-fields', backup, dataDir]
+        os.makedirs(backupData, exist_ok=True)
+        args = ['java', '-jar', tools, '--quiet', 'tamed', '--clean', '--write-all-fields', backup, backupData]
         r = run(args, check=True)
         # Mark data as completed
         if r.returncode == 0:
-            open(os.path.join(dataDir, '.complete'), 'a').close()
+            open(os.path.join(backupData, '.complete'), 'a').close()
 
     def setupTools(self):
         """
@@ -358,38 +373,41 @@ class Client(QObject):
 
         return None
 
-    def loadClasses(self, progress_callback, filename):
+    def loadClasses(self, progress_callback, backup):
         """
         Load classes.json to model from unpacked backup
+
+        :param progress_callback: Callback function for progress
+        :param backup: Filename of backup
         """
-        dataDir = os.path.join(self.__dataPath, filename)
-        with open(os.path.join(dataDir, 'classes.json'), 'r') as data:
+        backupDir = os.path.join(self.__dataPath, backup)
+        with open(os.path.join(backupDir, 'classes.json'), 'r') as data:
             classesModel.load(json.load(data))
             data.close()
 
 
 class ARKZilla(QObject):
-    '''
+    """
     Main class. Glue for QML. Bindings, slots, thread launcher
-    '''
+    """
 
+    backupStateProgress = pyqtSignal(int, arguments=['percent'])
+    backupStateFinished = pyqtSignal()
     connectionError = pyqtSignal(str, arguments=['error'])
     connectionSuccess = pyqtSignal()
-    syncError = pyqtSignal(str, arguments=['error'])
-    syncComplete = pyqtSignal()
-    downloadError = pyqtSignal(str, arguments=['error'])
     downloadComplete = pyqtSignal()
-    downloadProgress = pyqtSignal(int, arguments=['percent'])
-    removeError = pyqtSignal(str, arguments=['error'])
-    removeComplete = pyqtSignal()
-    removeProgress = pyqtSignal(int, arguments=['percent'])
-    unpackError = pyqtSignal(str, arguments=['error'])
-    unpackComplete = pyqtSignal()
-    javaNotFound = pyqtSignal()
-    themeChanged = pyqtSignal()
+    downloadError = pyqtSignal(str, arguments=['error'])
     hostChanged = pyqtSignal()
+    javaNotFound = pyqtSignal()
     loadClassesError = pyqtSignal(str, arguments=['error'])
-    loadClassesFinished = pyqtSignal()
+    loadClassesComplete = pyqtSignal()
+    removeComplete = pyqtSignal()
+    removeError = pyqtSignal(str, arguments=['error'])
+    syncLocalError = pyqtSignal(str, arguments=['error'])
+    syncRemoteError = pyqtSignal(str, arguments=['error'])
+    themeChanged = pyqtSignal()
+    unpackComplete = pyqtSignal()
+    unpackError = pyqtSignal(str, arguments=['error'])
 
     def __init__(self):
         super(ARKZilla, self).__init__()
@@ -399,11 +417,14 @@ class ARKZilla(QObject):
         self.__storePass = False
 
         self.__threadpool = QThreadPool()
-        print("Multithreading with maximum %d threads" % self.__threadpool.maxThreadCount())
+
+        log('{} {} started with maximum {} threads'.format(
+            COMPANY, __VERSION__, self.__threadpool.maxThreadCount()
+        ))
 
         self.__client = Client()
         if self.host:
-            self.__client.updatePrefix(prefix=self.host)
+            self.__client.updatePath(self.host)
 
     @pyqtProperty(str, notify=hostChanged)
     def host(self):
@@ -412,7 +433,7 @@ class ARKZilla(QObject):
     @host.setter
     def host(self, value):
         self.__settings.setValue('host', value)
-        self.__client.updatePrefix(prefix=value)
+        self.__client.updatePath(value)
         self.hostChanged.emit()
 
     @pyqtProperty(str, constant=True)
@@ -474,9 +495,9 @@ class ARKZilla(QObject):
         """
         Thread for test connection
 
-        :param host: Host from settingsUI
-        :param login: Login from settingsUI
-        :param password: Password from settingsUI
+        :param host: Remote host name
+        :param login: Remote user name
+        :param password: Remote password
         """
         worker = Worker(self.__client.testConnection,
                         host=host,
@@ -490,16 +511,16 @@ class ARKZilla(QObject):
     @pyqtSlot()
     def syncRemoteBackups(self):
         """
-        Thread for getting remote backup list
-        Send result to syncLocalBackups slot
+        Thread for getting remote backups list
+        Send result to syncLocalBackups slot for merging with local backups
         """
         worker = Worker(self.__client.listRemote,
                         host=self.host,
                         login=self.login,
                         password=self.password,
-                        remote=self.remotePath)
+                        path=self.remotePath)
+        worker.signals.error.connect(self.syncRemoteError)
         worker.signals.result.connect(self.syncLocalBackups)
-        worker.signals.error.connect(self.syncError)
         self.__threadpool.start(worker)
 
     @pyqtSlot()
@@ -508,70 +529,74 @@ class ARKZilla(QObject):
         """
         Thread for merge remote backups with local in one model.
 
-        :param remote: list of remote backups. come from syncRemoteBackups
+        :param remote: List of remote backups. Come from syncRemoteBackups
         """
         worker = Worker(self.__client.listLocal,
                         remote=remote)
-        worker.signals.result.connect(self.syncComplete)
-        worker.signals.error.connect(self.syncError)
+        worker.signals.error.connect(self.syncLocalError)
+        worker.signals.finished.connect(self.backupStateFinished)
         self.__threadpool.start(worker)
 
     @pyqtSlot(str)
-    def download(self, fname):
+    def download(self, backup):
         """
-        Thread for downloading remote file
+        Thread for downloading remote backup
 
-        :param fname: filename to download
+        :param backup: Filename of backup to download
         """
         worker = Worker(self.__client.download,
                         host=self.host,
                         login=self.login,
                         password=self.password,
-                        remote=self.remotePath,
-                        filename=fname)
-        worker.signals.result.connect(self.downloadComplete)
+                        path=self.remotePath,
+                        backup=backup)
         worker.signals.error.connect(self.downloadError)
-        worker.signals.progress.connect(self.downloadProgress)
+        worker.signals.finished.connect(self.backupStateFinished)
+        worker.signals.progress.connect(self.backupStateProgress)
+        worker.signals.result.connect(self.downloadComplete)
         self.__threadpool.start(worker)
 
     @pyqtSlot(str)
-    def remove(self, fname):
+    def remove(self, backup):
         """
-        Thread for removing local data
+        Thread for removing local backup and unpacked data
 
-        :param fname: filename to remove
+        :param backup: Filename of backup to remove
         """
-        worker = Worker(self.__client.remove, filename=fname)
-        worker.signals.result.connect(self.removeComplete)
+        worker = Worker(self.__client.remove, backup=backup)
         worker.signals.error.connect(self.removeError)
-        worker.signals.progress.connect(self.removeProgress)
+        worker.signals.finished.connect(self.backupStateFinished)
+        worker.signals.progress.connect(self.backupStateProgress)
+        worker.signals.result.connect(self.removeComplete)
         self.__threadpool.start(worker)
 
     @pyqtSlot(str)
-    def unpack(self, fname):
+    def unpack(self, backup):
         """
-        Thread for unpacking local data
+        Thread for unpacking local backup
 
-        :param fname: filename to unpack
+        :param backup: Filename of backup to unpack
         """
         # Check java exists
         if not which('java'):
             self.javaNotFound.emit()
+            self.backupStateFinished.emit()
             return
-        worker = Worker(self.__client.unpack, filename=fname, tools=self.toolsPath)
-        worker.signals.result.connect(self.unpackComplete)
+        worker = Worker(self.__client.unpack, backup=backup, tools=self.toolsPath)
         worker.signals.error.connect(self.unpackError)
+        worker.signals.finished.connect(self.backupStateFinished)
+        worker.signals.result.connect(self.unpackComplete)
         self.__threadpool.start(worker)
 
     @pyqtSlot(str)
-    def loadClasses(self, fname):
+    def loadClasses(self, backup):
         """
-        Thread for loading creature classes
+        Thread for loading creature classes from unpacked backup
 
-        :param fname: backup filename
+        :param backup: Filename of backup
         """
-        worker = Worker(self.__client.loadClasses, filename=fname)
-        worker.signals.result.connect(self.loadClassesFinished)
+        worker = Worker(self.__client.loadClasses, backup=backup)
+        worker.signals.result.connect(self.loadClassesComplete)
         worker.signals.error.connect(self.loadClassesError)
         self.__threadpool.start(worker)
 
@@ -584,7 +609,7 @@ class BackupModel(QAbstractListModel):
     localRole = Qt.UserRole + 1
     nameRole = Qt.UserRole + 2
     dateRole = Qt.UserRole + 3
-    fnameRole = Qt.UserRole + 4
+    backupRole = Qt.UserRole + 4
 
     def __init__(self, model=[], parent=None):
         super(BackupModel, self).__init__(parent)
@@ -609,7 +634,7 @@ class BackupModel(QAbstractListModel):
         return {BackupModel.localRole: b'local',
                 BackupModel.nameRole: b'name',
                 BackupModel.dateRole: b'date',
-                BackupModel.fnameRole: b'filename'}
+                BackupModel.backupRole: b'backup'}
 
     def clear(self):
         """
@@ -620,14 +645,14 @@ class BackupModel(QAbstractListModel):
         self.__model = []
         self.endRemoveRows()
 
-    def append(self, local, name, date, filename):
+    def append(self, local, name, date, backup):
         """
         Append list item to the model
 
         :param local: bool Backup is downloaded
         :param name: str Short name of backup
         :param date: str Formatted date of backup
-        :param filename: str File name of backup
+        :param backup: str Filename of backup
         """
         pos = self.rowCount()
 
@@ -635,7 +660,7 @@ class BackupModel(QAbstractListModel):
         self.__model.append({BackupModel.localRole: local,
                              BackupModel.nameRole: name,
                              BackupModel.dateRole: date,
-                             BackupModel.fnameRole: filename})
+                             BackupModel.backupRole: backup})
         self.endInsertRows()
 
 
@@ -671,9 +696,9 @@ class ClassesModel(QAbstractListModel):
         self.endResetModel()
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     # Set Material Design style
-    os.environ["QT_QUICK_CONTROLS_STYLE"] = "Material"
+    os.environ['QT_QUICK_CONTROLS_STYLE'] = 'Material'
 
     # Setup logger
     logging.basicConfig(filename='{}.log'.format(sys.argv[0]),
@@ -706,7 +731,7 @@ if __name__ == "__main__":
     engine.rootContext().setContextProperty('backupModel', backupProxyModel)
     engine.rootContext().setContextProperty('classesModel', classesProxyModel)
 
-    engine.load("main.qml")
+    engine.load('main.qml')
     engine.quit.connect(app.quit)
 
     sys.exit(app.exec_())
