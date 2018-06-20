@@ -33,7 +33,6 @@ Pane {
 
     Flickable {
         anchors.fill: parent
-        contentWidth: parent.width
         contentHeight: gridLayout.height
 
         Keys.onEscapePressed: {
@@ -43,10 +42,9 @@ Pane {
         GridLayout {
             id: gridLayout
             anchors.horizontalCenter: parent.horizontalCenter
-            y: Math.max((settingsPane.height - height) / 2, 0)
             columns: 3
             columnSpacing: 12
-            width: (parent.width > 800) ? Math.min(parent.width*0.66, 800) : parent.width
+            width: (parent.width > 800) ? 800 : parent.width
 
             state: 'normal'
 
