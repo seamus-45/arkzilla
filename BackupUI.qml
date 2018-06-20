@@ -15,7 +15,7 @@ Pane {
         source: backupView
         radius: 5
         z: 10
-        visible: backupView.state == "syncing"
+        visible: backupView.state == 'syncing'
 
         BusyIndicator { anchors.centerIn: parent }
         MouseArea { anchors.fill: parent; hoverEnabled: true; }
@@ -26,13 +26,13 @@ Pane {
         anchors.fill: parent
         anchors.margins: 20
 
-        state: "syncing"
+        state: 'syncing'
 
         function syncRemote() {
             if (!arkzilla.password.length && arkzilla.login != 'anonymous') {
                 passUI.open()
             } else {
-                backupView.state = "syncing"
+                backupView.state = 'syncing'
                 arkzilla.syncRemoteBackups()
             }
         }
@@ -45,26 +45,26 @@ Pane {
             id: refreshHeader
             text: qsTr('Refresh')
             y: -backupView.contentY - height
-            visible: backupView.state == "normal"
+            visible: backupView.state == 'normal'
         }
 
         Label {
             id: refreshLabel
             anchors.centerIn: parent
             text: qsTr('Pull to refresh')
-            visible: (backupView.count == 0 && backupView.state == "normal") ? true : false
+            visible: (backupView.count == 0 && backupView.state == 'normal') ? true : false
         }
 
-        onDragEnded: if (refreshHeader.refresh && backupView.state == "normal") { syncRemote() }
+        onDragEnded: if (refreshHeader.refresh && backupView.state == 'normal') { syncRemote() }
 
         Component.onCompleted: {
             arkzilla.syncLocalBackups()
         }
 
         states: [
-            State { name: "syncing" },
-            State { name: "processing" },
-            State { name: "normal"
+            State { name: 'syncing' },
+            State { name: 'processing' },
+            State { name: 'normal'
                 PropertyChanges { target: backupView.currentItem; restoreEntryValues: false; indeterminate: false }
                 PropertyChanges { target: backupView.currentItem; restoreEntryValues: false; progress: 0 }
                 PropertyChanges { target: backupView.currentItem; restoreEntryValues: false; statusText: '' }
@@ -138,17 +138,17 @@ Pane {
                     IconButton {
                         id: buttonRemove
                         text: ''
-                        ToolTip.text: qsTr("Remove downloaded backup data")
+                        ToolTip.text: qsTr('Remove downloaded backup data')
                         ToolTip.delay: 1000
                         ToolTip.timeout: 5000
                         ToolTip.visible: hovered
                         color: Material.color(Material.Red)
                         visible: isLocal ? true : false
-                        enabled: backupView.state == "normal"
-                        opacity: backupView.state == "processing" ? 0.5 : 1
+                        enabled: backupView.state == 'normal'
+                        opacity: backupView.state == 'processing' ? 0.5 : 1
                         onClicked: {
-                            backupView.state = "processing"
-                            labelStatus.text = "Removing"
+                            backupView.state = 'processing'
+                            labelStatus.text = 'Removing'
                             backupView.currentIndex = index
                             arkzilla.remove(model.backup)
                         }
@@ -157,17 +157,17 @@ Pane {
                     IconButton {
                         id: buttonDownload
                         text: ''
-                        ToolTip.text: qsTr("Download remote backup")
+                        ToolTip.text: qsTr('Download remote backup')
                         ToolTip.delay: 1000
                         ToolTip.timeout: 5000
                         ToolTip.visible: hovered
                         color: Material.color(Material.Green)
                         visible: !isLocal
-                        enabled: backupView.state == "normal"
-                        opacity: backupView.state == "processing" ? 0.5 : 1
+                        enabled: backupView.state == 'normal'
+                        opacity: backupView.state == 'processing' ? 0.5 : 1
                         onClicked: {
-                            backupView.state = "processing"
-                            labelStatus.text = "Downloading"
+                            backupView.state = 'processing'
+                            labelStatus.text = 'Downloading'
                             backupView.currentIndex = index
                             arkzilla.download(model.backup)
                         }
@@ -176,17 +176,17 @@ Pane {
                     IconButton {
                         id: buttonOpen
                         text: ''
-                        ToolTip.text: qsTr("Unpack and open backup with ark-tools")
+                        ToolTip.text: qsTr('Unpack and open backup with ark-tools')
                         ToolTip.delay: 1000
                         ToolTip.timeout: 5000
                         ToolTip.visible: hovered
                         color: Material.color(Material.Orange)
                         visible: isLocal
-                        enabled: backupView.state == "normal"
-                        opacity: backupView.state == "processing" ? 0.5 : 1
+                        enabled: backupView.state == 'normal'
+                        opacity: backupView.state == 'processing' ? 0.5 : 1
                         onClicked: {
-                            backupView.state = "processing"
-                            labelStatus.text = "Unpacking"
+                            backupView.state = 'processing'
+                            labelStatus.text = 'Unpacking'
                             backupView.currentIndex = index
                             indeterminate = true
                             arkzilla.unpack(model.backup)
@@ -224,7 +224,7 @@ Pane {
         }
 
         onBackupStateFinished: {
-            backupView.state = "normal"
+            backupView.state = 'normal'
         }
 
         onDownloadComplete: {

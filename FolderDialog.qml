@@ -31,7 +31,7 @@ Dialog {
             anchors.fill: parent
             Label {
                 padding: 16
-                text: ""
+                text: ''
             }
             Column {
                 Layout.fillWidth: true
@@ -45,7 +45,7 @@ Dialog {
                 }
             }
             IconButton {
-                text: ""
+                text: ''
                 onClicked: { folderModel.folder = folderModel.parentFolder }
             }
         }
@@ -53,13 +53,13 @@ Dialog {
 
     footer: DialogButtonBox {
         Button {
-            text: qsTr("Select")
+            text: qsTr('Select')
             flat: true
             enabled: (folderView.currentIndex >= 0 ) ? true : false
             onClicked: dialog.accept()
         }
         Button {
-            text: qsTr("Cancel")
+            text: qsTr('Cancel')
             flat: true
             DialogButtonBox.buttonRole: DialogButtonBox.RejectRole
         }
@@ -92,7 +92,7 @@ Dialog {
             sortField: FolderListModel.Name
             showDirsFirst: true
 
-            // due to strange bug, with showDirsFirst enabled "folder" not binded properly
+            // due to strange bug, with showDirsFirst enabled 'folder' not binded properly
             property string currentFolder
 
             Component.onCompleted: {

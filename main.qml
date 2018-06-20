@@ -17,7 +17,7 @@ ApplicationWindow {
     Material.accent: Material.LightGreen
     Material.elevation: 6
 
-    FontLoader { id: faSolid; source: "fonts/fa-solid-900.ttf"}
+    FontLoader { id: faSolid; source: 'fonts/fa-solid-900.ttf'}
 
     font.pixelSize: 18
 
@@ -28,16 +28,16 @@ ApplicationWindow {
         RowLayout {
             anchors.fill: parent
             IconButton {
-                text: ""
+                text: ''
                 color: 'white'
                 onClicked: stackWindow.pop()
                 visible: (stackWindow.depth > 1) ? true : false
             }
             Item { Layout.fillWidth: true  }
             IconButton {
-                text: ""
+                text: ''
                 color: 'white'
-                ToolTip.text: qsTr("Open settings")
+                ToolTip.text: qsTr('Open settings')
                 ToolTip.delay: 1000
                 ToolTip.timeout: 5000
                 ToolTip.visible: hovered

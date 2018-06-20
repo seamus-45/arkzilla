@@ -6,7 +6,7 @@ Item {
     height: 48
     width: parent.width
 
-    property bool refresh: state == "pulled" ? true : false
+    property bool refresh: state == 'pulled' ? true : false
     property string text
     property string color: '#999'
     property int size: 18
@@ -40,12 +40,12 @@ Item {
 
     states: [
         State {
-            name: "normal"; when: parent.contentY >= -pullLabel.height/2
+            name: 'normal'; when: parent.contentY >= -pullLabel.height/2
             PropertyChanges { target: pullLabel; opacity: 0; }
             PropertyChanges { target: refreshIcon; rotation: 0; }
         },
         State {
-            name: "pulled"; when: parent.contentY < -pullLabel.height/2
+            name: 'pulled'; when: parent.contentY < -pullLabel.height/2
             PropertyChanges { target: pullLabel; opacity: 1; }
             PropertyChanges { target: refreshIcon; rotation: 180; }
         }

@@ -64,36 +64,36 @@ Pane {
             Label {
                 Layout.alignment: Qt.AlignRight
                 anchors.baseline: host.baseline
-                text: qsTr("Address:")
+                text: qsTr('Address:')
             }
             TextField {
                 id: host
                 text: arkzilla.host
-                placeholderText: qsTr("example.org")
+                placeholderText: qsTr('example.org')
                 selectByMouse: true
                 Layout.fillWidth: true
             }
             Label {
                 Layout.alignment: Qt.AlignRight
                 anchors.baseline: login.baseline
-                text: qsTr("Login:")
+                text: qsTr('Login:')
             }
             TextField {
                 id: login
                 text: arkzilla.login
-                placeholderText: qsTr("anonymous")
+                placeholderText: qsTr('anonymous')
                 selectByMouse: true
                 Layout.fillWidth: true
             }
             Label {
                 Layout.alignment: Qt.AlignRight
                 anchors.baseline: password.baseline
-                text: qsTr("Password:")
+                text: qsTr('Password:')
             }
             TextField {
                 id: password
                 text: arkzilla.password
-                placeholderText: qsTr("password")
+                placeholderText: qsTr('password')
                 selectByMouse: true
                 echoMode: TextInput.Password
                 //passwordMaskDelay: 300
@@ -101,7 +101,7 @@ Pane {
             }
             CheckBox {
                 id: storePass
-                text: qsTr("Remember password")
+                text: qsTr('Remember password')
                 Layout.alignment: Qt.AlignRight
                 Layout.columnSpan: 2
                 onClicked: if (checked) { toast.show(qsTr('WARNING! Password will be stored in clear text!'), Material.color(Material.Red).toString(), 10000) }
@@ -109,12 +109,12 @@ Pane {
             Label {
                 Layout.alignment: Qt.AlignRight
                 anchors.baseline: remotePath.baseline
-                text: qsTr("Remote folder:")
+                text: qsTr('Remote folder:')
             }
             TextField {
                 id: remotePath
                 text: arkzilla.remotePath
-                placeholderText: qsTr("/SavedArks")
+                placeholderText: qsTr('/SavedArks')
                 selectByMouse: true
                 Layout.fillWidth: true
             }
@@ -125,13 +125,13 @@ Pane {
                 Switch {
                     id: enableSSL
                     Layout.fillWidth: true
-                    text: qsTr("Enable SSL/TLS")
+                    text: qsTr('Enable SSL/TLS')
                     Layout.alignment: Qt.AlignLeft
                     enabled: false
                 }
                 Button {
                     id: testConnection
-                    text: qsTr("Test connection")
+                    text: qsTr('Test connection')
                     Layout.alignment: Qt.AlignRight
                     onClicked: {
                         if (!host.length) {
@@ -174,7 +174,7 @@ Pane {
                     Layout.fillWidth: true
                     anchors.baseline: parent.baseline
                     text: arkzilla.toolsPath
-                    placeholderText: qsTr("ark-tools.jar")
+                    placeholderText: qsTr('ark-tools.jar')
                 }
                 Button {
                     text: qsTr('Choose')
@@ -199,7 +199,7 @@ Pane {
                 id: darkTheme
                 Layout.columnSpan: 2
                 Layout.alignment: Qt.AlignRight
-                text: qsTr("Switch Light/Dark theme")
+                text: qsTr('Switch Light/Dark theme')
                 checked: arkzilla.darkTheme
             }
 
@@ -210,13 +210,13 @@ Pane {
                 Layout.alignment: Qt.AlignRight
                 spacing: 12
                 Button {
-                    text: qsTr("Save")
+                    text: qsTr('Save')
                     onClicked: {
                         host.length ? saveSettings() : host.focus = true
                     }
                 }
                 Button {
-                    text: qsTr("Cancel")
+                    text: qsTr('Cancel')
                     onClicked: stackWindow.pop()
                 }
             }

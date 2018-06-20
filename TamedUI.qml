@@ -22,6 +22,8 @@ Pane {
             focus: true
             activeFocusOnTab: true
 
+            ScrollIndicator.vertical: ScrollIndicator { }
+
             model: classesModel
 
             delegate: Component {
@@ -82,5 +84,6 @@ Pane {
                 }
             }
         }
+
     }
 }

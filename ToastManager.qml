@@ -43,7 +43,7 @@ ListView {
 
     displaced: Transition {
         NumberAnimation {
-            properties: "y"
+            properties: 'y'
             easing.type: Easing.InOutQuad
         }
     }

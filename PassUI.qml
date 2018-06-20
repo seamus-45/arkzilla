@@ -28,12 +28,12 @@ Dialog {
 
     footer: DialogButtonBox {
         Button {
-            text: qsTr("Accept")
+            text: qsTr('Accept')
             flat: true
             onClicked: if (!password.text.length) { password.focus = true } else { dialog.accept() }
         }
         Button {
-            text: qsTr("Cancel")
+            text: qsTr('Cancel')
             flat: true
             DialogButtonBox.buttonRole: DialogButtonBox.RejectRole
         }
