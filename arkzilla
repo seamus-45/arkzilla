@@ -223,7 +223,7 @@ class Client(QObject):
             if os.path.isfile(os.path.join(self.__downloadPath, backup)):
                 local.append(backup)
 
-        backupModel.clear()
+        model = []
         # Join and prepare two lists
         for backup in list(set(local + remote)):
             # Backup is already downloaded?
@@ -234,7 +234,12 @@ class Client(QObject):
             date = time.strftime('%Y.%m.%d %H:%M',
                                  time.strptime(dateRaw, '%d.%m.%Y_%H.%M.%S'))
             # Append to final model
-            backupModel.append(islocal, name, date, backup)
+            model.append({'local': islocal,
+                          'name': name,
+                          'date': date,
+                          'backup': backup})
+
+        backupModel.load(model)
 
     def isLocal(self, backup):
         """
@@ -621,11 +626,13 @@ class BackupModel(QAbstractListModel):
     def data(self, index, role):
         if role in self.roleNames():
             item = self.__model[index.row()]
-            return item.get(role)
+            key = self.roleNames()[role].decode()
+            return item.get(key)
 
     def setData(self, index, value, role):
         if role in self.roleNames():
-            self.__model[index.row()][role] = value
+            key = self.roleNames()[role].decode()
+            self.__model[index.row()][key] = value
             self.dataChanged.emit(index, index)
             return True
         return False
@@ -636,32 +643,13 @@ class BackupModel(QAbstractListModel):
                 BackupModel.dateRole: b'date',
                 BackupModel.backupRole: b'backup'}
 
-    def clear(self):
+    def load(self, data):
         """
-        Clear model.
-        FIXME: For some reason beginResetModel cause segfault
+        Load model from provided data
         """
-        self.beginRemoveRows(QModelIndex(), 0, self.rowCount() - 1)
-        self.__model = []
-        self.endRemoveRows()
-
-    def append(self, local, name, date, backup):
-        """
-        Append list item to the model
-
-        :param local: bool Backup is downloaded
-        :param name: str Short name of backup
-        :param date: str Formatted date of backup
-        :param backup: str Filename of backup
-        """
-        pos = self.rowCount()
-
-        self.beginInsertRows(QModelIndex(), pos, pos)
-        self.__model.append({BackupModel.localRole: local,
-                             BackupModel.nameRole: name,
-                             BackupModel.dateRole: date,
-                             BackupModel.backupRole: backup})
-        self.endInsertRows()
+        self.beginResetModel()
+        self.__model = data
+        self.endResetModel()
 
 
 class ClassesModel(QAbstractListModel):
@@ -681,7 +669,8 @@ class ClassesModel(QAbstractListModel):
     def data(self, index, role):
         if role in self.roleNames():
             item = self.__model[index.row()]
-            return item.get(self.roleNames()[role].decode())
+            key = self.roleNames()[role].decode()
+            return item.get(key)
 
     def roleNames(self):
         return {ClassesModel.clsRole: b'cls',
