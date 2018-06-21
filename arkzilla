@@ -390,6 +390,19 @@ class Client(QObject):
             classesModel.load(json.load(data))
             data.close()
 
+    def loadTamed(self, progress_callback, backup, id):
+        """
+        Load classes.json to model from unpacked backup
+
+        :param progress_callback: Callback function for progress
+        :param backup: Filename of backup
+        :param id: Creature identificator
+        """
+        backupDir = os.path.join(self.__dataPath, backup)
+        with open(os.path.join(backupDir, '{}.json'.format(id)), 'r') as data:
+            tamedModel.load(json.load(data))
+            data.close()
+
 
 class ARKZilla(QObject):
     """
@@ -406,6 +419,8 @@ class ARKZilla(QObject):
     javaNotFound = pyqtSignal()
     loadClassesError = pyqtSignal(str, arguments=['error'])
     loadClassesComplete = pyqtSignal()
+    loadTamedError = pyqtSignal(str, arguments=['error'])
+    loadTamedComplete = pyqtSignal()
     removeComplete = pyqtSignal()
     removeError = pyqtSignal(str, arguments=['error'])
     syncLocalError = pyqtSignal(str, arguments=['error'])
@@ -605,6 +620,19 @@ class ARKZilla(QObject):
         worker.signals.error.connect(self.loadClassesError)
         self.__threadpool.start(worker)
 
+    @pyqtSlot(str, str)
+    def loadTamed(self, backup, id):
+        """
+        Thread for loading tamed creatures from unpacked backup
+
+        :param backup: Filename of backup
+        :param id: Creature identificator
+        """
+        worker = Worker(self.__client.loadTamed, backup=backup, id=id)
+        worker.signals.result.connect(self.loadTamedComplete)
+        worker.signals.error.connect(self.loadTamedError)
+        self.__threadpool.start(worker)
+
 
 class BackupModel(QAbstractListModel):
     """
@@ -685,6 +713,42 @@ class ClassesModel(QAbstractListModel):
         self.endResetModel()
 
 
+class TamedModel(QAbstractListModel):
+    """
+    Model for TamedUI: tamedView
+    """
+    nameRole = Qt.UserRole + 1
+    femaleRole = Qt.UserRole + 2
+    tribeRole = Qt.UserRole + 3
+
+    def __init__(self, model=[], parent=None):
+        super(TamedModel, self).__init__(parent)
+        self.__model = model
+
+    def rowCount(self, parent=QModelIndex()):
+        return len(self.__model)
+
+    def data(self, index, role):
+        if role in self.roleNames():
+            item = self.__model[index.row()]
+            key = self.roleNames()[role].decode()
+            return item.get(key)
+
+    def roleNames(self):
+        return {TamedModel.nameRole: b'name',
+                TamedModel.femaleRole: b'female',
+                TamedModel.tribeRole: b'tribe',
+                }
+
+    def load(self, data):
+        """
+        Load model from provided data
+        """
+        self.beginResetModel()
+        self.__model = data
+        self.endResetModel()
+
+
 if __name__ == '__main__':
     # Set Material Design style
     os.environ['QT_QUICK_CONTROLS_STYLE'] = 'Material'
@@ -702,6 +766,7 @@ if __name__ == '__main__':
     arkzilla = ARKZilla()
     backupModel = BackupModel()
     classesModel = ClassesModel()
+    tamedModel = TamedModel()
 
     backupProxyModel = QSortFilterProxyModel()
     backupProxyModel.setSourceModel(backupModel)
@@ -719,6 +784,7 @@ if __name__ == '__main__':
     engine.rootContext().setContextProperty('arkzilla', arkzilla)
     engine.rootContext().setContextProperty('backupModel', backupProxyModel)
     engine.rootContext().setContextProperty('classesModel', classesProxyModel)
+    engine.rootContext().setContextProperty('tamedModel', tamedModel)
 
     engine.load('main.qml')
     engine.quit.connect(app.quit)

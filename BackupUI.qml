@@ -39,7 +39,7 @@ Pane {
 
         model: backupModel
 
-        delegate: itemDelegate
+        delegate: backupDelegate
 
         PullToRefresh {
             id: refreshHeader
@@ -73,7 +73,7 @@ Pane {
     }
 
     Component {
-        id: itemDelegate
+        id: backupDelegate
 
         Rectangle {
             id: outerContainer
