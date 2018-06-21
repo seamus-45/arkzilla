@@ -187,7 +187,7 @@ class Client(QObject):
 
     def listRemote(self, progress_callback, host, login, password, path):
         """
-        Get list of backups from path server
+        Get list of backups from remote server and return result
 
         :param progress_callback: Callback function for progress
         :param host: Remote host name
@@ -213,7 +213,7 @@ class Client(QObject):
 
     def listLocal(self, progress_callback, remote=[]):
         """
-        Get list of downloaded backups and merge with remote
+        Get list of downloaded backups, merge with remote and return result
 
         :param progress_callback: Callback function for progress
         :param remote: Dict with remote backups
@@ -223,7 +223,7 @@ class Client(QObject):
             if os.path.isfile(os.path.join(self.__downloadPath, backup)):
                 local.append(backup)
 
-        model = []
+        backups = []
         # Join and prepare two lists
         for backup in list(set(local + remote)):
             # Backup is already downloaded?
@@ -234,12 +234,12 @@ class Client(QObject):
             date = time.strftime('%Y.%m.%d %H:%M',
                                  time.strptime(dateRaw, '%d.%m.%Y_%H.%M.%S'))
             # Append to final model
-            model.append({'local': islocal,
-                          'name': name,
-                          'date': date,
-                          'backup': backup})
+            backups.append({'local': islocal,
+                            'name': name,
+                            'date': date,
+                            'backup': backup})
 
-        backupModel.load(model)
+        return backups
 
     def isLocal(self, backup):
         """
@@ -380,28 +380,32 @@ class Client(QObject):
 
     def loadClasses(self, progress_callback, backup):
         """
-        Load classes.json to model from unpacked backup
+        Load classes.json from unpacked backup and return result
 
         :param progress_callback: Callback function for progress
         :param backup: Filename of backup
         """
         backupDir = os.path.join(self.__dataPath, backup)
+        classes = []
         with open(os.path.join(backupDir, 'classes.json'), 'r') as data:
-            classesModel.load(json.load(data))
+            classes = json.load(data)
             data.close()
+            return classes
 
     def loadTamed(self, progress_callback, backup, id):
         """
-        Load classes.json to model from unpacked backup
+        Load classes.json from unpacked backup and return result
 
         :param progress_callback: Callback function for progress
         :param backup: Filename of backup
         :param id: Creature identificator
         """
         backupDir = os.path.join(self.__dataPath, backup)
+        tamed = []
         with open(os.path.join(backupDir, '{}.json'.format(id)), 'r') as data:
-            tamedModel.load(json.load(data))
+            tamed = json.load(data)
             data.close()
+            return tamed
 
 
 class ARKZilla(QObject):
@@ -418,9 +422,7 @@ class ARKZilla(QObject):
     hostChanged = pyqtSignal()
     javaNotFound = pyqtSignal()
     loadClassesError = pyqtSignal(str, arguments=['error'])
-    loadClassesComplete = pyqtSignal()
     loadTamedError = pyqtSignal(str, arguments=['error'])
-    loadTamedComplete = pyqtSignal()
     removeComplete = pyqtSignal()
     removeError = pyqtSignal(str, arguments=['error'])
     syncLocalError = pyqtSignal(str, arguments=['error'])
@@ -555,7 +557,15 @@ class ARKZilla(QObject):
                         remote=remote)
         worker.signals.error.connect(self.syncLocalError)
         worker.signals.finished.connect(self.backupStateFinished)
+        worker.signals.result.connect(self.loadBackupsModel)
         self.__threadpool.start(worker)
+
+    @pyqtSlot(object)
+    def loadBackupsModel(self, backups):
+        """
+        Slot for update backups model
+        """
+        backupModel.load(backups)
 
     @pyqtSlot(str)
     def download(self, backup):
@@ -616,9 +626,16 @@ class ARKZilla(QObject):
         :param backup: Filename of backup
         """
         worker = Worker(self.__client.loadClasses, backup=backup)
-        worker.signals.result.connect(self.loadClassesComplete)
+        worker.signals.result.connect(self.loadClassesModel)
         worker.signals.error.connect(self.loadClassesError)
         self.__threadpool.start(worker)
+
+    @pyqtSlot(object)
+    def loadClassesModel(self, classes):
+        """
+        Slot for update classes model
+        """
+        classesModel.load(classes)
 
     @pyqtSlot(str, str)
     def loadTamed(self, backup, id):
@@ -629,9 +646,16 @@ class ARKZilla(QObject):
         :param id: Creature identificator
         """
         worker = Worker(self.__client.loadTamed, backup=backup, id=id)
-        worker.signals.result.connect(self.loadTamedComplete)
+        worker.signals.result.connect(self.loadTamedModel)
         worker.signals.error.connect(self.loadTamedError)
         self.__threadpool.start(worker)
+
+    @pyqtSlot(object)
+    def loadTamedModel(self, tamed):
+        """
+        Slot for update tamed model
+        """
+        tamedModel.load(tamed)
 
 
 class BackupModel(QAbstractListModel):
