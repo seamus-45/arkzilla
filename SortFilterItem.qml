@@ -13,6 +13,7 @@ CheckBox {
     tristate: true
     autoExclusive: true
 
+    property int innerPadding: 5
     property bool filter: false
     property bool sort: false
     property alias filterText: filter.text
@@ -20,12 +21,10 @@ CheckBox {
     contentItem: Rectangle {
         color: 'transparent'
 
-        property int padding: tamedView.padding
-
         Label {
             width: parent.width - control.indicator.width
             height: parent.height
-            padding: parent.padding
+            padding: control.innerPadding
             text: control.text
             verticalAlignment: Text.AlignVCenter
             font: control.font
@@ -36,7 +35,7 @@ CheckBox {
             id: filter
             width: parent.width - control.indicator.width
             height: parent.height
-            padding: parent.padding
+            padding: control.innerPadding
             verticalAlignment: Text.AlignVCenter
             font: control.font
             visible: control.filter
@@ -60,7 +59,7 @@ CheckBox {
 
             Text {
                 anchors.fill: parent
-                padding: parent.padding
+                padding: control.innerPadding
                 verticalAlignment: Text.AlignVCenter
                 font: control.font
                 color: Material.foreground
@@ -80,13 +79,13 @@ CheckBox {
 
         Component.onCompleted: {
             textMetrics.text = control.text
-            implicitWidth = textMetrics.width + padding * 2 + control.indicator.width
-            implicitHeight = textMetrics.height + padding * 2
+            implicitWidth = textMetrics.width + control.innerPadding * 2 + control.indicator.width
+            implicitHeight = textMetrics.height + control.innerPadding * 2
         }
     }
 
     indicator: Rectangle {
-        implicitWidth: control.font.pixelSize
+        implicitWidth: control.font.pixelSize + control.innerPadding
         height: control.contentItem.height
         x: control.width - width - control.spacing
         y: control.height / 2 - height / 2
