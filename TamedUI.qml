@@ -102,11 +102,12 @@ Pane {
         clip: true
         focus: true
         activeFocusOnTab: true
-        headerPositioning: ListView.OverlayHeader
-        ScrollIndicator.vertical: ScrollIndicator { }
 
         model: tamedModel
+
         header: tamedHeader
+        headerPositioning: ListView.OverlayHeader
+
         delegate: tamedDelegate
 
         highlightFollowsCurrentItem: false
@@ -117,6 +118,8 @@ Pane {
             color: Material.accent
             opacity: 0.5
         }
+
+        ScrollIndicator.vertical: ScrollIndicator { }
 
         Keys.onEscapePressed: {
             stackWindow.pop()
@@ -146,9 +149,15 @@ Pane {
             RowLayout {
                 id: buttons
                 width: parent.width
+
                 SortFilterItem {
                     id: filterLevel
                     text: 'Level'
+                    onCheckStateChanged: {
+                        if (checkState != Qt.Unchecked) {
+                            tamedModel.setSortOrder(Qt.UserRole + 6, checkState - 1)
+                        }
+                    }
                 }
                 SortFilterItem {
                     id: filterName
@@ -157,6 +166,16 @@ Pane {
                     text: 'Name'
                     sort: true
                     filter: true
+                    onCheckStateChanged: {
+                        if (checkState != Qt.Unchecked) {
+                            tamedModel.setSortOrder(Qt.UserRole + 1, checkState - 1)
+                        }
+                    }
+                    onFilterTextChanged: {
+                        if (tamedView.currentIndex) { tamedView.currentIndex = -1 }
+                        if (filterText.length && filterTribe.filterText.length) { filterTribe.clear() }
+                        tamedModel.setFilterString(Qt.UserRole + 1, filterText)
+                    }
                 }
                 SortFilterItem {
                     id: filterTribe
@@ -164,6 +183,16 @@ Pane {
                     Layout.fillWidth: true
                     text: 'Tribe'
                     filter: true
+                    onCheckStateChanged: {
+                        if (checkState != Qt.Unchecked) {
+                            tamedModel.setSortOrder(Qt.UserRole + 3, checkState - 1)
+                        }
+                    }
+                    onFilterTextChanged: {
+                        if (tamedView.currentIndex) { tamedView.currentIndex = -1 }
+                        if (filterText.length && filterName.filterText.length) { filterName.clear() }
+                        tamedModel.setFilterString(Qt.UserRole + 3, filterText)
+                    }
                 }
             }
             ButtonGroup {
@@ -190,7 +219,7 @@ Pane {
                     width: tamedView.headerItem.levelWidth
                     padding: tamedView.padding
                     clip: true
-                    text: model.baseLevel + model.extraLevel
+                    text: model.level
                     //background: Rectangle { anchors.fill: parent; color: Material.accent; opacity: 0.3}
                 }
                 Label {
@@ -200,7 +229,7 @@ Pane {
                     bottomPadding: tamedView.padding
                     rightPadding: tamedView.padding
                     clip: true
-                    text: model.name ? model.name : model.type
+                    text: model.name
                     background: Label {
                         padding: tamedView.padding
                         font.family: faSolid.name

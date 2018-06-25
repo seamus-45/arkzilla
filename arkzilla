@@ -746,7 +746,8 @@ class TamedModel(QAbstractListModel):
     tribeRole = Qt.UserRole + 3
     baseLevelRole = Qt.UserRole + 4
     extraLevelRole = Qt.UserRole + 5
-    typeRole = Qt.UserRole + 6
+    levelRole = Qt.UserRole + 6
+    typeRole = Qt.UserRole + 7
 
     def __init__(self, model=[], parent=None):
         super(TamedModel, self).__init__(parent)
@@ -758,6 +759,23 @@ class TamedModel(QAbstractListModel):
     def data(self, index, role):
         if role in self.roleNames():
             item = self.__model[index.row()]
+
+            # calculate and return full level
+            if role == TamedModel.levelRole:
+                key1 = self.roleNames()[TamedModel.baseLevelRole].decode()
+                key2 = self.roleNames()[TamedModel.extraLevelRole].decode()
+                return item.get(key1) + item.get(key2)
+
+            # if name is empty return type
+            if role == TamedModel.nameRole:
+                key = self.roleNames()[role].decode()
+                name = item.get(key)
+                if name:
+                    return name
+                else:
+                    key = self.roleNames()[TamedModel.typeRole].decode()
+                    return item.get(key)
+
             key = self.roleNames()[role].decode()
             return item.get(key)
 
@@ -767,6 +785,7 @@ class TamedModel(QAbstractListModel):
                 TamedModel.tribeRole: b'tribe',
                 TamedModel.baseLevelRole: b'baseLevel',
                 TamedModel.extraLevelRole: b'extraLevel',
+                TamedModel.levelRole: b'level',
                 TamedModel.typeRole: b'type',
                 }
 
@@ -777,6 +796,38 @@ class TamedModel(QAbstractListModel):
         self.beginResetModel()
         self.__model = data
         self.endResetModel()
+
+
+class TamedProxyModel(QSortFilterProxyModel):
+    """
+    Sort and filter implementation
+    """
+    def __init__(self, parent=None):
+        super(TamedProxyModel, self).__init__(parent)
+
+    @pyqtSlot(int, bool)
+    def setSortOrder(self, role, ascending):
+        """
+        Basic sorting
+
+        :param role: Role in a tamed model
+        :param ascending: Sort order
+        """
+        self.setSortRole(role)
+        self.setSortCaseSensitivity(Qt.CaseSensitive)
+        self.sort(0, [Qt.AscendingOrder, Qt.DescendingOrder][ascending])
+
+    @pyqtSlot(int, str)
+    def setFilterString(self, role, text):
+        """
+        Basic filtering
+
+        :param role: Role in a tamed model
+        :param text: Filter string
+        """
+        self.setFilterRole(role)
+        self.setFilterCaseSensitivity(Qt.CaseInsensitive)
+        self.setFilterFixedString(text)
 
 
 if __name__ == '__main__':
@@ -811,10 +862,14 @@ if __name__ == '__main__':
     classesProxyModel.setDynamicSortFilter(True)
     classesProxyModel.sort(0, Qt.AscendingOrder)
 
+    tamedProxyModel = TamedProxyModel()
+    tamedProxyModel.setSourceModel(tamedModel)
+    tamedProxyModel.setDynamicSortFilter(True)
+
     engine.rootContext().setContextProperty('arkzilla', arkzilla)
     engine.rootContext().setContextProperty('backupModel', backupProxyModel)
     engine.rootContext().setContextProperty('classesModel', classesProxyModel)
-    engine.rootContext().setContextProperty('tamedModel', tamedModel)
+    engine.rootContext().setContextProperty('tamedModel', tamedProxyModel)
 
     engine.load('main.qml')
     engine.quit.connect(app.quit)

@@ -18,6 +18,8 @@ CheckBox {
     property bool sort: false
     property alias filterText: filter.text
 
+    function clear() { filter.clear() }
+
     contentItem: Rectangle {
         color: 'transparent'
 
@@ -92,7 +94,7 @@ CheckBox {
         color: 'transparent'
         Text {
             anchors.fill: parent
-            text: (checkState == Qt.PartiallyChecked || checkState == Qt.Unchecked ) ? '' : ''
+            text: (checkState == Qt.PartiallyChecked || checkState == Qt.Unchecked ) ? '' : ''
             color: Material.foreground
             opacity: checkState != Qt.Unchecked ? 1.0 : 0.35
             font.pixelSize: control.font.pixelSize
