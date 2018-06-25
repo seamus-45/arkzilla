@@ -626,8 +626,8 @@ class ARKZilla(QObject):
         :param backup: Filename of backup
         """
         worker = Worker(self.__client.loadClasses, backup=backup)
-        worker.signals.result.connect(self.loadClassesModel)
         worker.signals.error.connect(self.loadClassesError)
+        worker.signals.result.connect(self.loadClassesModel)
         self.__threadpool.start(worker)
 
     @pyqtSlot(object)
@@ -646,8 +646,8 @@ class ARKZilla(QObject):
         :param id: Creature identificator
         """
         worker = Worker(self.__client.loadTamed, backup=backup, id=id)
-        worker.signals.result.connect(self.loadTamedModel)
         worker.signals.error.connect(self.loadTamedError)
+        worker.signals.result.connect(self.loadTamedModel)
         self.__threadpool.start(worker)
 
     @pyqtSlot(object)
@@ -744,6 +744,9 @@ class TamedModel(QAbstractListModel):
     nameRole = Qt.UserRole + 1
     femaleRole = Qt.UserRole + 2
     tribeRole = Qt.UserRole + 3
+    baseLevelRole = Qt.UserRole + 4
+    extraLevelRole = Qt.UserRole + 5
+    typeRole = Qt.UserRole + 6
 
     def __init__(self, model=[], parent=None):
         super(TamedModel, self).__init__(parent)
@@ -762,6 +765,9 @@ class TamedModel(QAbstractListModel):
         return {TamedModel.nameRole: b'name',
                 TamedModel.femaleRole: b'female',
                 TamedModel.tribeRole: b'tribe',
+                TamedModel.baseLevelRole: b'baseLevel',
+                TamedModel.extraLevelRole: b'extraLevel',
+                TamedModel.typeRole: b'type',
                 }
 
     def load(self, data):

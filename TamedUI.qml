@@ -15,6 +15,11 @@ Pane {
 
         property string backup
 
+        function getCls() {
+            var index = classesModel.index(classesView.currentIndex, undefined)
+            return classesModel.data(index, Qt.UserRole + 1)
+        }
+
         clip: true
         focus: true
         activeFocusOnTab: true
@@ -71,8 +76,17 @@ Pane {
             stackWindow.pop()
         }
 
+        Keys.onReturnPressed: {
+            arkzilla.loadTamed(classesView.backup, getCls())
+        }
+
+        Keys.onSpacePressed: {
+            arkzilla.loadTamed(classesView.backup, getCls())
+        }
+
+
         Component.onCompleted: {
-            currentIndex = -1
+            classesView.backup = 'TheIsland_21.02.2018_12.53.24.ark'
             arkzilla.loadClasses(classesView.backup)
         }
     }
@@ -83,32 +97,131 @@ Pane {
         anchors.right: parent.right
         height: parent.height
 
+        property int padding: 5
+
         clip: true
         focus: true
         activeFocusOnTab: true
-
+        headerPositioning: ListView.OverlayHeader
         ScrollIndicator.vertical: ScrollIndicator { }
 
         model: tamedModel
-
+        header: tamedHeader
         delegate: tamedDelegate
+
+        highlightFollowsCurrentItem: false
+        highlight: Rectangle {
+            width: tamedView.width
+            height: tamedView.currentItem ? tamedView.currentItem.height : 0
+            y: tamedView.currentItem ? tamedView.currentItem.y : 0
+            color: Material.accent
+            opacity: 0.5
+        }
 
         Keys.onEscapePressed: {
             stackWindow.pop()
+        }
+
+        Component.onCompleted: {
+            classesView.backup = 'TheIsland_21.02.2018_12.53.24.ark'
+            arkzilla.loadTamed(classesView.backup, 'Allo_Character_BP_C')
+        }
+    }
+
+    Component {
+        id: tamedHeader
+
+        ToolBar {
+            id: filterBar
+            width: parent.width
+            padding: ListView.view.padding
+            background: Rectangle { color: Material.background }
+            z: 2
+
+            property alias levelWidth: filterLevel.width
+            property alias nameWidth: filterName.width
+            property alias tribeWidth: filterTribe.width
+            property alias headerSpacing: buttons.spacing
+
+            RowLayout {
+                id: buttons
+                width: parent.width
+                SortFilterItem {
+                    id: filterLevel
+                    text: 'Level'
+                }
+                SortFilterItem {
+                    id: filterName
+                    Layout.minimumWidth: implicitWidth
+                    Layout.fillWidth: true
+                    text: 'Name'
+                    sort: true
+                    filter: true
+                }
+                SortFilterItem {
+                    id: filterTribe
+                    Layout.minimumWidth: implicitWidth
+                    Layout.fillWidth: true
+                    text: 'Tribe'
+                    filter: true
+                }
+            }
+            ButtonGroup {
+                buttons: buttons.children
+            }
         }
     }
 
     Component {
         id: tamedDelegate
-        RowLayout {
-            Label {
-                text: model.name
+
+        Item {
+            height: tamedRow.height
+            width: parent.width
+            Row {
+                id: tamedRow
+                leftPadding: tamedView.padding
+                rightPadding: tamedView.padding
+                topPadding: 1
+                bottomPadding: 1
+                spacing: tamedView.headerItem.headerSpacing
+
+                Label {
+                    width: tamedView.headerItem.levelWidth
+                    padding: tamedView.padding
+                    clip: true
+                    text: model.baseLevel + model.extraLevel
+                    //background: Rectangle { anchors.fill: parent; color: Material.accent; opacity: 0.3}
+                }
+                Label {
+                    width: tamedView.headerItem.nameWidth
+                    leftPadding: tamedView.padding + font.pixelSize
+                    topPadding: tamedView.padding
+                    bottomPadding: tamedView.padding
+                    rightPadding: tamedView.padding
+                    clip: true
+                    text: model.name ? model.name : model.type
+                    background: Label {
+                        padding: tamedView.padding
+                        font.family: faSolid.name
+                        font.pixelSize: parent.font.pixelSize
+                        color: model.female ? Material.color(Material.Red) : Material.color(Material.Blue)
+                        text: model.female ? '' : ''
+                    }
+                }
+                Label {
+                    width: tamedView.headerItem.tribeWidth
+                    padding: tamedView.padding
+                    clip: true
+                    opacity: model.tribe ? 1.0 : 0.5
+                    text: model.tribe ? model.tribe : qsTr('None')
+                }
             }
-            Label {
-                text: model.tribe
-            }
-            Label {
-                text: model.female
+            MouseArea {
+                anchors.fill: parent
+                onClicked: {
+                    tamedView.currentIndex = index
+                }
             }
         }
     }

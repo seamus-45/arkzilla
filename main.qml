@@ -56,7 +56,7 @@ ApplicationWindow {
     StackView {
         id: stackWindow
         anchors.fill: parent
-        initialItem: backupUI
+        initialItem: tamedUI
 
         Component.onCompleted: {
             if (!arkzilla.host.length) {
