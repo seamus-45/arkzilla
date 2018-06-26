@@ -748,6 +748,7 @@ class TamedModel(QAbstractListModel):
     extraLevelRole = Qt.UserRole + 5
     levelRole = Qt.UserRole + 6
     typeRole = Qt.UserRole + 7
+    locationRole = Qt.UserRole + 8
 
     def __init__(self, model=[], parent=None):
         super(TamedModel, self).__init__(parent)
@@ -787,6 +788,7 @@ class TamedModel(QAbstractListModel):
                 TamedModel.extraLevelRole: b'extraLevel',
                 TamedModel.levelRole: b'level',
                 TamedModel.typeRole: b'type',
+                TamedModel.locationRole: b'location',
                 }
 
     def load(self, data):

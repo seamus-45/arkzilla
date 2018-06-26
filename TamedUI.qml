@@ -72,18 +72,11 @@ Pane {
             }
         }
 
-        Keys.onEscapePressed: {
-            stackWindow.pop()
-        }
-
-        Keys.onReturnPressed: {
-            arkzilla.loadTamed(classesView.backup, getCls())
-        }
-
-        Keys.onSpacePressed: {
-            arkzilla.loadTamed(classesView.backup, getCls())
-        }
-
+        Keys.onEscapePressed: { stackWindow.pop() }
+        Keys.onReturnPressed: { arkzilla.loadTamed(classesView.backup, getCls()) }
+        Keys.onSpacePressed: { arkzilla.loadTamed(classesView.backup, getCls()) }
+        Keys.onLeftPressed: { tamedView.focus = true }
+        Keys.onRightPressed: { tamedView.focus = true }
 
         Component.onCompleted: {
             classesView.backup = 'TheIsland_21.02.2018_12.53.24.ark'
@@ -108,6 +101,9 @@ Pane {
         header: tamedHeader
         headerPositioning: ListView.OverlayHeader
 
+        footer: tamedFooter
+        footerPositioning: ListView.OverlayFooter
+
         delegate: tamedDelegate
 
         highlightFollowsCurrentItem: false
@@ -121,13 +117,24 @@ Pane {
 
         ScrollIndicator.vertical: ScrollIndicator { }
 
-        Keys.onEscapePressed: {
-            stackWindow.pop()
-        }
+        Keys.onEscapePressed: { stackWindow.pop() }
+        Keys.onLeftPressed: { classesView.focus = true }
+        Keys.onRightPressed: { classesView.focus = true }
 
         Component.onCompleted: {
             classesView.backup = 'TheIsland_21.02.2018_12.53.24.ark'
             arkzilla.loadTamed(classesView.backup, 'Allo_Character_BP_C')
+        }
+    }
+
+    Component {
+        id: tamedFooter
+        Pane {
+            width: parent.width
+
+            Label {
+                id: footerName
+            }
         }
     }
 
@@ -144,6 +151,13 @@ Pane {
             property alias levelWidth: filterLevel.width
             property alias nameWidth: filterName.width
             property alias tribeWidth: filterTribe.width
+            property alias latWidth: filterLat.width
+            property alias lonWidth: filterLon.width
+            property alias tribeImplicitWidth: filterTribe.implicitWidth
+            property alias nameImplicitWidth: filterName.implicitWidth
+            property alias levelImplicitWidth: filterLevel.implicitWidth
+            property alias latImplicitWidth: filterLat.implicitWidth
+            property alias lonImplicitWidth: filterLon.implicitWidth
             property alias headerSpacing: buttons.spacing
 
             RowLayout {
@@ -153,6 +167,7 @@ Pane {
                 SortFilterItem {
                     id: filterLevel
                     text: 'Level'
+                    sort: true
                     onCheckStateChanged: {
                         if (checkState != Qt.Unchecked) {
                             tamedModel.setSortOrder(Qt.UserRole + 6, checkState - 1)
@@ -182,6 +197,7 @@ Pane {
                     Layout.minimumWidth: implicitWidth
                     Layout.fillWidth: true
                     text: 'Tribe'
+                    sort: true
                     filter: true
                     onCheckStateChanged: {
                         if (checkState != Qt.Unchecked) {
@@ -193,6 +209,14 @@ Pane {
                         if (filterText.length && filterName.filterText.length) { filterName.clear() }
                         tamedModel.setFilterString(Qt.UserRole + 3, filterText)
                     }
+                }
+                SortFilterItem {
+                    id: filterLat
+                    text: 'Lat'
+                }
+                SortFilterItem {
+                    id: filterLon
+                    text: 'Lon'
                 }
             }
             ButtonGroup {
@@ -218,9 +242,8 @@ Pane {
                 Label {
                     width: tamedView.headerItem.levelWidth
                     padding: tamedView.padding
-                    clip: true
                     text: model.level
-                    //background: Rectangle { anchors.fill: parent; color: Material.accent; opacity: 0.3}
+                    onWidthChanged: { tamedView.headerItem.levelImplicitWidth = Math.max(tamedView.headerItem.levelImplicitWidth, implicitWidth) }
                 }
                 Label {
                     width: tamedView.headerItem.nameWidth
@@ -228,7 +251,6 @@ Pane {
                     topPadding: tamedView.padding
                     bottomPadding: tamedView.padding
                     rightPadding: tamedView.padding
-                    clip: true
                     text: model.name
                     background: Label {
                         padding: tamedView.padding
@@ -237,13 +259,26 @@ Pane {
                         color: model.female ? Material.color(Material.Red) : Material.color(Material.Blue)
                         text: model.female ? '' : ''
                     }
+                    onWidthChanged: { tamedView.headerItem.nameImplicitWidth = Math.max(tamedView.headerItem.nameImplicitWidth, implicitWidth) }
                 }
                 Label {
                     width: tamedView.headerItem.tribeWidth
                     padding: tamedView.padding
-                    clip: true
                     opacity: model.tribe ? 1.0 : 0.5
                     text: model.tribe ? model.tribe : qsTr('None')
+                    onWidthChanged: { tamedView.headerItem.tribeImplicitWidth = Math.max(tamedView.headerItem.tribeImplicitWidth, implicitWidth) }
+                }
+                Label {
+                    width: tamedView.headerItem.latWidth
+                    padding: tamedView.padding
+                    text: model.location['lat'].toFixed(1)
+                    onWidthChanged: { tamedView.headerItem.latImplicitWidth = Math.max(tamedView.headerItem.latImplicitWidth, implicitWidth) }
+                }
+                Label {
+                    width: tamedView.headerItem.lonWidth
+                    padding: tamedView.padding
+                    text: model.location['lon'].toFixed(1)
+                    onWidthChanged: { tamedView.headerItem.lonImplicitWidth = Math.max(tamedView.headerItem.lonImplicitWidth, implicitWidth) }
                 }
             }
             MouseArea {

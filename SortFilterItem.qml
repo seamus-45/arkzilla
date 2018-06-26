@@ -92,6 +92,7 @@ CheckBox {
         x: control.width - width - control.spacing
         y: control.height / 2 - height / 2
         color: 'transparent'
+        visible: control.sort
         Text {
             anchors.fill: parent
             text: (checkState == Qt.PartiallyChecked || checkState == Qt.Unchecked ) ? '' : ''
