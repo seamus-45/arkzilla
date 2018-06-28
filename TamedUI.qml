@@ -43,6 +43,7 @@ Pane {
                     anchors.fill: parent
                     onClicked: {
                         classesView.currentIndex = index
+                        tamedView.currentIndex = -1
                         arkzilla.loadTamed(classesView.backup, model.cls)
                     }
                 }
@@ -73,10 +74,9 @@ Pane {
         }
 
         Keys.onEscapePressed: { stackWindow.pop() }
-        Keys.onReturnPressed: { arkzilla.loadTamed(classesView.backup, getCls()) }
-        Keys.onSpacePressed: { arkzilla.loadTamed(classesView.backup, getCls()) }
-        Keys.onLeftPressed: { tamedView.focus = true }
-        Keys.onRightPressed: { tamedView.focus = true }
+        Keys.onReturnPressed: { tamedView.currentIndex = -1; arkzilla.loadTamed(classesView.backup, getCls()) }
+        Keys.onSpacePressed: { tamedView.currentIndex = -1; arkzilla.loadTamed(classesView.backup, getCls()) }
+        Keys.onRightPressed: { tamedView.currentIndex = -1; arkzilla.loadTamed(classesView.backup, getCls()) }
 
         Component.onCompleted: {
             classesView.backup = 'TheIsland_21.02.2018_12.53.24.ark'
@@ -95,6 +95,8 @@ Pane {
         clip: true
         focus: true
         activeFocusOnTab: true
+
+        ScrollIndicator.vertical: ScrollIndicator { }
 
         model: tamedModel
 
@@ -115,11 +117,8 @@ Pane {
             opacity: 0.5
         }
 
-        ScrollIndicator.vertical: ScrollIndicator { }
-
         Keys.onEscapePressed: { stackWindow.pop() }
-        Keys.onLeftPressed: { classesView.focus = true }
-        Keys.onRightPressed: { classesView.focus = true }
+        Keys.onLeftPressed: { currentIndex = -1; classesView.focus = true }
 
         Component.onCompleted: {
             classesView.backup = 'TheIsland_21.02.2018_12.53.24.ark'
@@ -130,10 +129,97 @@ Pane {
     Component {
         id: tamedFooter
         Pane {
+            id: tamedPane
             width: parent.width
+            visible: (tamedView.currentIndex >= 0) ? true : false
+            z: 2
 
-            Label {
-                id: footerName
+            property variant model: {}
+
+            function epochDays(time) {
+                var epoch = new Date(time*1000)
+                var days = Math.floor(epoch/8.64e7)
+                var hours = epoch.getHours()
+                var mins = epoch.getMinutes()
+                var seconds = epoch.getSeconds()
+                return days + ', ' + hours + ':' + mins + ':' + seconds
+            }
+
+            Column {
+                anchors.fill: parent
+
+                GridLayout {
+                    width: parent.width
+                    columns: 2
+                    columnSpacing: 20
+
+                    FooterSection { text: qsTr('Wild Stats') }
+                    FooterSection { text: qsTr('Colors') }
+                    WildLevels { levels: model ? model.wildLevels : undefined }
+                    ColorSet { colors: model ? model.colorSetIndices : 0 }
+
+                    RowLayout {
+                        spacing: 20
+
+                        GridLayout {
+                            Layout.fillWidth: true
+                            Layout.alignment: Qt.AlignTop | Qt.AlignLeft
+                            columns: 2
+
+                            FooterSection { Layout.columnSpan:2; text: qsTr('Levels') }
+                            Label { Layout.fillWidth: true; text: qsTr('Full:'); font.bold: true } Label { Layout.alignment: Qt.AlignRight; text: model ? model.baseLevel + model.extraLevel : '' }
+                            Label { text: qsTr('Wild:'); font.bold: true } Label { Layout.alignment: Qt.AlignRight; text: model ? model.baseLevel : '' }
+                            Label { text: qsTr('Extra:'); font.bold: true } Label { Layout.alignment: Qt.AlignRight; text: model ? model.extraLevel : '' }
+                            Label { text: qsTr('Exp:'); font.bold: true } Label { Layout.alignment: Qt.AlignRight; text: model ? model.experience : '' }
+                        }
+
+                        GridLayout {
+                            Layout.fillWidth: true
+                            Layout.alignment: Qt.AlignTop | Qt.AlignLeft
+                            columns: 2
+
+                            FooterSection { Layout.columnSpan:2; text: qsTr('Taming') }
+                            Label { Layout.fillWidth: true; text: qsTr('Tamer:'); font.bold: true } Label { Layout.alignment: Qt.AlignRight; text: model ? model.tamer : '' }
+                            Label { text: qsTr('Tamed at:'); font.bold: true } Label { Layout.alignment: Qt.AlignRight; text: model ? epochDays(model.tamedAtTime): '' }
+                            Label { text: qsTr('Tamed on:'); font.bold: true } Label { Layout.alignment: Qt.AlignRight; text: model ? model.tamedOnServerName : '' }
+                            Label { text: qsTr('Effectivness:'); font.bold: true } Label { Layout.alignment: Qt.AlignRight; text: model ? model.tamingEffectivness : '' }
+                        }
+
+                        GridLayout {
+                            Layout.fillWidth: true
+                            Layout.alignment: Qt.AlignTop | Qt.AlignLeft
+                            columns: 2
+
+                            FooterSection { Layout.columnSpan: 2; text: qsTr('Location') }
+                            Label { Layout.fillWidth: true; text: qsTr('Lat:'); font.bold: true } Label { Layout.alignment: Qt.AlignRight; text: model ? model.location.lat : '' }
+                            Label { text: qsTr('Lon:'); font.bold: true } Label { Layout.alignment: Qt.AlignRight; text: model ? model.location.lon : '' }
+                            Label { text: qsTr('X:'); font.bold: true } Label { Layout.alignment: Qt.AlignRight; text: model ? model.location.x : '' }
+                            Label { text: qsTr('Y:'); font.bold: true } Label { Layout.alignment: Qt.AlignRight; text: model ? model.location.y : '' }
+                            Label { text: qsTr('Z:'); font.bold: true } Label { Layout.alignment: Qt.AlignRight; text: model ? model.location.z : '' }
+                        }
+                    }
+
+                    GridLayout {
+                        Layout.alignment: Qt.AlignTop | Qt.AlignLeft
+                        columns: 2
+
+                        FooterSection { Layout.columnSpan: 2; text: qsTr('Other') }
+                        Label { Layout.fillWidth: true; text: qsTr('ID:'); font.bold: true } Label { Layout.alignment: Qt.AlignRight; text: model ? model.id : '' }
+                        Label { text: qsTr('Owner:'); font.bold: true } Label { Layout.alignment: Qt.AlignRight; text: model ? model.ownerName : '' }
+                        Label { text: qsTr('Imprinter:'); font.bold: true } Label { Layout.alignment: Qt.AlignRight; text: model ? model.imprinter : '' }
+                        Label { text: qsTr('Imprinting:'); font.bold: true } Label { Layout.alignment: Qt.AlignRight; text: model ? model.imprintingQuality : '' }
+                        Label { text: qsTr('Last stasis:'); font.bold: true } Label { Layout.alignment: Qt.AlignRight; text: model ? epochDays(model.lastEnterStasisTime) : '' }
+                    }
+                }
+
+                Connections {
+                    target: tamedView
+
+                    onCurrentIndexChanged: {
+                        var index = tamedModel.index(tamedView.currentIndex, undefined)
+                        model = tamedModel.data(index, Qt.UserRole + 9)
+                    }
+                }
             }
         }
     }
@@ -271,13 +357,13 @@ Pane {
                 Label {
                     width: tamedView.headerItem.latWidth
                     padding: tamedView.padding
-                    text: model.location['lat'].toFixed(1)
+                    text: model.location.lat.toFixed(1)
                     onWidthChanged: { tamedView.headerItem.latImplicitWidth = Math.max(tamedView.headerItem.latImplicitWidth, implicitWidth) }
                 }
                 Label {
                     width: tamedView.headerItem.lonWidth
                     padding: tamedView.padding
-                    text: model.location['lon'].toFixed(1)
+                    text: model.location.lon.toFixed(1)
                     onWidthChanged: { tamedView.headerItem.lonImplicitWidth = Math.max(tamedView.headerItem.lonImplicitWidth, implicitWidth) }
                 }
             }
@@ -299,6 +385,11 @@ Pane {
 
         onLoadTamedError: {
             toast.show(error, Material.color(Material.Red).toString())
+        }
+
+        onLoadTamedComplete:{
+            tamedView.currentIndex = 0
+            tamedView.focus = true
         }
     }
 }

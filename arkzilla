@@ -423,6 +423,7 @@ class ARKZilla(QObject):
     javaNotFound = pyqtSignal()
     loadClassesError = pyqtSignal(str, arguments=['error'])
     loadTamedError = pyqtSignal(str, arguments=['error'])
+    loadTamedComplete = pyqtSignal()
     removeComplete = pyqtSignal()
     removeError = pyqtSignal(str, arguments=['error'])
     syncLocalError = pyqtSignal(str, arguments=['error'])
@@ -656,6 +657,7 @@ class ARKZilla(QObject):
         Slot for update tamed model
         """
         tamedModel.load(tamed)
+        self.loadTamedComplete.emit()
 
 
 class BackupModel(QAbstractListModel):
@@ -749,6 +751,7 @@ class TamedModel(QAbstractListModel):
     levelRole = Qt.UserRole + 6
     typeRole = Qt.UserRole + 7
     locationRole = Qt.UserRole + 8
+    rowRole = Qt.UserRole + 9
 
     def __init__(self, model=[], parent=None):
         super(TamedModel, self).__init__(parent)
@@ -777,6 +780,11 @@ class TamedModel(QAbstractListModel):
                     key = self.roleNames()[TamedModel.typeRole].decode()
                     return item.get(key)
 
+            # return full row data for extra info in footer
+            if role == TamedModel.rowRole:
+                return item
+
+            # return remaining roles
             key = self.roleNames()[role].decode()
             return item.get(key)
 
@@ -789,6 +797,7 @@ class TamedModel(QAbstractListModel):
                 TamedModel.levelRole: b'level',
                 TamedModel.typeRole: b'type',
                 TamedModel.locationRole: b'location',
+                TamedModel.rowRole: b'row',
                 }
 
     def load(self, data):
