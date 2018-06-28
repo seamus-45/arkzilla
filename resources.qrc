@@ -1,0 +1,20 @@
+<RCC>
+    <qresource prefix="/">
+        <file>fa-solid-900.ttf</file>
+        <file>BackupUI.qml</file>
+        <file>ColorSet.qml</file>
+        <file>FolderDialog.qml</file>
+        <file>FooterSection.qml</file>
+        <file>IconButton.qml</file>
+        <file>main.qml</file>
+        <file>PassUI.qml</file>
+        <file>PullToRefresh.qml</file>
+        <file>SettingsSection.qml</file>
+        <file>SettingsUI.qml</file>
+        <file>SortFilterItem.qml</file>
+        <file>TamedUI.qml</file>
+        <file>ToastManager.qml</file>
+        <file>Toast.qml</file>
+        <file>WildLevels.qml</file>
+    </qresource>
+</RCC>

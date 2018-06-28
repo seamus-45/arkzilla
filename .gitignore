@@ -4,3 +4,4 @@ data/
 download/
 tools/
 test/
+__pycache__/

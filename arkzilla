@@ -7,6 +7,7 @@ import inspect
 import logging
 import json
 import time
+import arkzilla_rc #NOQA
 
 from PyQt5.QtGui import QGuiApplication
 from PyQt5.QtQml import QQmlApplicationEngine
@@ -891,7 +892,7 @@ if __name__ == '__main__':
     engine.rootContext().setContextProperty('classesModel', classesProxyModel)
     engine.rootContext().setContextProperty('tamedModel', tamedProxyModel)
 
-    engine.load('main.qml')
+    engine.load('qrc:/main.qml')
     engine.quit.connect(app.quit)
 
     sys.exit(app.exec_())
