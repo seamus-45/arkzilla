@@ -12,6 +12,7 @@ MenuSeparator {
 
     contentItem: Label {
         color: parent.color
-        text: parent.text.toUpperCase()
+        font.capitalization: Font.AllUppercase
+        text: parent.text
     }
 }

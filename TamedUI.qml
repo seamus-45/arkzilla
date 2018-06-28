@@ -79,7 +79,6 @@ Pane {
         Keys.onRightPressed: { tamedView.currentIndex = -1; arkzilla.loadTamed(classesView.backup, getCls()) }
 
         Component.onCompleted: {
-            classesView.backup = 'TheIsland_21.02.2018_12.53.24.ark'
             arkzilla.loadClasses(classesView.backup)
         }
     }
@@ -91,6 +90,7 @@ Pane {
         height: parent.height
 
         property int padding: 5
+        property variant row
 
         clip: true
         focus: true
@@ -120,9 +120,11 @@ Pane {
         Keys.onEscapePressed: { stackWindow.pop() }
         Keys.onLeftPressed: { currentIndex = -1; classesView.focus = true }
 
-        Component.onCompleted: {
-            classesView.backup = 'TheIsland_21.02.2018_12.53.24.ark'
-            arkzilla.loadTamed(classesView.backup, 'Allo_Character_BP_C')
+        onCurrentIndexChanged: {
+            if (currentIndex >= 0) {
+                var index = tamedModel.index(tamedView.currentIndex, undefined)
+                row = tamedModel.data(index, Qt.UserRole + 9)
+            }
         }
     }
 
@@ -134,7 +136,7 @@ Pane {
             visible: (tamedView.currentIndex >= 0) ? true : false
             z: 2
 
-            property variant model: {}
+            property variant row: tamedView.row
 
             function epochDays(time) {
                 var epoch = new Date(time*1000)
@@ -154,9 +156,30 @@ Pane {
                     columnSpacing: 20
 
                     FooterSection { text: qsTr('Wild Stats') }
-                    FooterSection { text: qsTr('Colors') }
-                    WildLevels { levels: model ? model.wildLevels : undefined }
-                    ColorSet { colors: model ? model.colorSetIndices : 0 }
+                    FooterSection {
+                        ToolTip.visible: hovered
+                        ToolTip.timeout: 5000
+                        ToolTip.delay: 1000
+                        ToolTip.text: qsTr('Copy painting command')
+                        text: qsTr(' Colors')
+                        MouseArea {
+                            anchors.fill: parent
+                            cursorShape: Qt.PointingHandCursor
+                            onClicked: {
+                                var colors = row.colorSetIndices
+                                var cmd = ''
+                                for (var key in colors) {
+                                    if (colors[key])
+                                        cmd ? cmd += '| ' : ''
+                                        cmd += 'SetTargetDinoColor ' + key + ' ' + colors[key]
+                                }
+                                arkzilla.clipboardText(cmd)
+                                toast.show(qsTr('Copied to clipboard'))
+                            }
+                        }
+                    }
+                    WildLevels { levels: row ? row.wildLevels : undefined }
+                    ColorSet { colors: row ? row.colorSetIndices : 0 }
 
                     RowLayout {
                         spacing: 20
@@ -167,10 +190,10 @@ Pane {
                             columns: 2
 
                             FooterSection { Layout.columnSpan:2; text: qsTr('Levels') }
-                            Label { Layout.fillWidth: true; text: qsTr('Full:'); font.bold: true } Label { Layout.alignment: Qt.AlignRight; text: model ? model.baseLevel + model.extraLevel : '' }
-                            Label { text: qsTr('Wild:'); font.bold: true } Label { Layout.alignment: Qt.AlignRight; text: model ? model.baseLevel : '' }
-                            Label { text: qsTr('Extra:'); font.bold: true } Label { Layout.alignment: Qt.AlignRight; text: model ? model.extraLevel : '' }
-                            Label { text: qsTr('Exp:'); font.bold: true } Label { Layout.alignment: Qt.AlignRight; text: model ? model.experience : '' }
+                            Label { Layout.fillWidth: true; text: qsTr('Full:'); font.bold: true } Label { Layout.alignment: Qt.AlignRight; text: row ? row.baseLevel + row.extraLevel : '' }
+                            Label { text: qsTr('Wild:'); font.bold: true } Label { Layout.alignment: Qt.AlignRight; text: row ? row.baseLevel : '' }
+                            Label { text: qsTr('Extra:'); font.bold: true } Label { Layout.alignment: Qt.AlignRight; text: row ? row.extraLevel : '' }
+                            Label { text: qsTr('Exp:'); font.bold: true } Label { Layout.alignment: Qt.AlignRight; text: row ? row.experience : '' }
                         }
 
                         GridLayout {
@@ -179,10 +202,10 @@ Pane {
                             columns: 2
 
                             FooterSection { Layout.columnSpan:2; text: qsTr('Taming') }
-                            Label { Layout.fillWidth: true; text: qsTr('Tamer:'); font.bold: true } Label { Layout.alignment: Qt.AlignRight; text: model ? model.tamer : '' }
-                            Label { text: qsTr('Tamed at:'); font.bold: true } Label { Layout.alignment: Qt.AlignRight; text: model ? epochDays(model.tamedAtTime): '' }
-                            Label { text: qsTr('Tamed on:'); font.bold: true } Label { Layout.alignment: Qt.AlignRight; text: model ? model.tamedOnServerName : '' }
-                            Label { text: qsTr('Effectivness:'); font.bold: true } Label { Layout.alignment: Qt.AlignRight; text: model ? model.tamingEffectivness : '' }
+                            Label { Layout.fillWidth: true; text: qsTr('Tamer:'); font.bold: true } Label { Layout.alignment: Qt.AlignRight; text: row ? row.tamer : '' }
+                            Label { text: qsTr('Tamed at:'); font.bold: true } Label { Layout.alignment: Qt.AlignRight; text: row ? epochDays(row.tamedAtTime): '' }
+                            Label { text: qsTr('Tamed on:'); font.bold: true } Label { Layout.alignment: Qt.AlignRight; text: row ? row.tamedOnServerName : '' }
+                            Label { text: qsTr('Effectivness:'); font.bold: true } Label { Layout.alignment: Qt.AlignRight; text: row ? row.tamingEffectivness : '' }
                         }
 
                         GridLayout {
@@ -190,12 +213,28 @@ Pane {
                             Layout.alignment: Qt.AlignTop | Qt.AlignLeft
                             columns: 2
 
-                            FooterSection { Layout.columnSpan: 2; text: qsTr('Location') }
-                            Label { Layout.fillWidth: true; text: qsTr('Lat:'); font.bold: true } Label { Layout.alignment: Qt.AlignRight; text: model ? model.location.lat : '' }
-                            Label { text: qsTr('Lon:'); font.bold: true } Label { Layout.alignment: Qt.AlignRight; text: model ? model.location.lon : '' }
-                            Label { text: qsTr('X:'); font.bold: true } Label { Layout.alignment: Qt.AlignRight; text: model ? model.location.x : '' }
-                            Label { text: qsTr('Y:'); font.bold: true } Label { Layout.alignment: Qt.AlignRight; text: model ? model.location.y : '' }
-                            Label { text: qsTr('Z:'); font.bold: true } Label { Layout.alignment: Qt.AlignRight; text: model ? model.location.z : '' }
+                            FooterSection {
+                                Layout.columnSpan: 2
+                                ToolTip.visible: hovered
+                                ToolTip.timeout: 5000
+                                ToolTip.delay: 1000
+                                ToolTip.text: qsTr('Copy teleport command')
+                                text: qsTr(' Location')
+                                MouseArea {
+                                    anchors.fill: parent
+                                    cursorShape: Qt.PointingHandCursor
+                                    onClicked: {
+                                        var cmd = 'admincheat SetPlayerPos ' + row.location.x + ' ' + row.location.y + ' ' + row.location.z
+                                        arkzilla.clipboardText(cmd)
+                                        toast.show(qsTr('Copied to clipboard'))
+                                    }
+                                }
+                            }
+                            Label { Layout.fillWidth: true; text: qsTr('Lat:'); font.bold: true } Label { Layout.alignment: Qt.AlignRight; text: row ? row.location.lat : '' }
+                            Label { text: qsTr('Lon:'); font.bold: true } Label { Layout.alignment: Qt.AlignRight; text: row ? row.location.lon : '' }
+                            Label { text: qsTr('X:'); font.bold: true } Label { Layout.alignment: Qt.AlignRight; text: row ? row.location.x : '' }
+                            Label { text: qsTr('Y:'); font.bold: true } Label { Layout.alignment: Qt.AlignRight; text: row ? row.location.y : '' }
+                            Label { text: qsTr('Z:'); font.bold: true } Label { Layout.alignment: Qt.AlignRight; text: row ? row.location.z : '' }
                         }
                     }
 
@@ -204,20 +243,11 @@ Pane {
                         columns: 2
 
                         FooterSection { Layout.columnSpan: 2; text: qsTr('Other') }
-                        Label { Layout.fillWidth: true; text: qsTr('ID:'); font.bold: true } Label { Layout.alignment: Qt.AlignRight; text: model ? model.id : '' }
-                        Label { text: qsTr('Owner:'); font.bold: true } Label { Layout.alignment: Qt.AlignRight; text: model ? model.ownerName : '' }
-                        Label { text: qsTr('Imprinter:'); font.bold: true } Label { Layout.alignment: Qt.AlignRight; text: model ? model.imprinter : '' }
-                        Label { text: qsTr('Imprinting:'); font.bold: true } Label { Layout.alignment: Qt.AlignRight; text: model ? model.imprintingQuality : '' }
-                        Label { text: qsTr('Last stasis:'); font.bold: true } Label { Layout.alignment: Qt.AlignRight; text: model ? epochDays(model.lastEnterStasisTime) : '' }
-                    }
-                }
-
-                Connections {
-                    target: tamedView
-
-                    onCurrentIndexChanged: {
-                        var index = tamedModel.index(tamedView.currentIndex, undefined)
-                        model = tamedModel.data(index, Qt.UserRole + 9)
+                        Label { Layout.fillWidth: true; text: qsTr('ID:'); font.bold: true } Label { Layout.alignment: Qt.AlignRight; text: row ? row.id : '' }
+                        Label { text: qsTr('Owner:'); font.bold: true } Label { Layout.alignment: Qt.AlignRight; text: row ? row.ownerName : '' }
+                        Label { text: qsTr('Imprinter:'); font.bold: true } Label { Layout.alignment: Qt.AlignRight; text: row ? row.imprinter : '' }
+                        Label { text: qsTr('Imprinting:'); font.bold: true } Label { Layout.alignment: Qt.AlignRight; text: row ? row.imprintingQuality : '' }
+                        Label { text: qsTr('Last stasis:'); font.bold: true } Label { Layout.alignment: Qt.AlignRight; text: row ? epochDays(row.lastEnterStasisTime) : '' }
                     }
                 }
             }

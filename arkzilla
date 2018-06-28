@@ -449,6 +449,8 @@ class ARKZilla(QObject):
         if self.host:
             self.__client.updatePath(self.host)
 
+        self.__clipboard = QGuiApplication.clipboard()
+
     @pyqtProperty(str, notify=hostChanged)
     def host(self):
         return self.__settings.value('host')
@@ -658,6 +660,13 @@ class ARKZilla(QObject):
         """
         tamedModel.load(tamed)
         self.loadTamedComplete.emit()
+
+    @pyqtSlot(str)
+    def clipboardText(self, text):
+        """
+        Slot for set clipboard text
+        """
+        self.__clipboard.setText(text)
 
 
 class BackupModel(QAbstractListModel):

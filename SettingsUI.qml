@@ -48,7 +48,7 @@ Pane {
 
             state: 'normal'
 
-            LabelSeparator {
+            SettingsSection {
                 Layout.columnSpan: 3
                 Layout.fillWidth: true
                 text: qsTr('Remote server')
@@ -149,7 +149,7 @@ Pane {
                 }
             }
 
-            LabelSeparator {
+            SettingsSection {
                 Layout.columnSpan: 3
                 Layout.fillWidth: true
                 text: qsTr('Ark-tools')
@@ -183,7 +183,7 @@ Pane {
                 }
             }
 
-            LabelSeparator {
+            SettingsSection {
                 Layout.columnSpan: 3
                 Layout.fillWidth: true
                 text: qsTr('Theme')
