@@ -5,3 +5,4 @@ download/
 tools/
 test/
 __pycache__/
+arkzilla_rc.py
