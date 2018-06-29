@@ -413,6 +413,12 @@ Pane {
             toast.show(error, Material.color(Material.Red).toString())
         }
 
+        onLoadClassesComplete:{
+            classesView.currentIndex = 0
+            classesView.forceActiveFocus()
+            arkzilla.loadTamed(classesView.backup, classesView.getCls())
+        }
+
         onLoadTamedError: {
             toast.show(error, Material.color(Material.Red).toString())
         }

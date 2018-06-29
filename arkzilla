@@ -423,6 +423,7 @@ class ARKZilla(QObject):
     hostChanged = pyqtSignal()
     javaNotFound = pyqtSignal()
     loadClassesError = pyqtSignal(str, arguments=['error'])
+    loadClassesComplete = pyqtSignal()
     loadTamedError = pyqtSignal(str, arguments=['error'])
     loadTamedComplete = pyqtSignal()
     removeComplete = pyqtSignal()
@@ -640,6 +641,7 @@ class ARKZilla(QObject):
         Slot for update classes model
         """
         classesModel.load(classes)
+        self.loadClassesComplete.emit()
 
     @pyqtSlot(str, str)
     def loadTamed(self, backup, id):

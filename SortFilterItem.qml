@@ -12,6 +12,7 @@ CheckBox {
     spacing: 0
     tristate: true
     autoExclusive: true
+    focusPolicy: Qt.NoFocus
 
     property int innerPadding: 5
     property bool filter: false

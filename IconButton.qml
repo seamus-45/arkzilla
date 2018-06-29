@@ -3,6 +3,7 @@ import QtQuick.Controls 2.2
 import QtQuick.Controls.Material 2.2
 
 ToolButton {
+    focusPolicy: Qt.NoFocus
     property string color: Material.foreground
 
     contentItem: Label {
