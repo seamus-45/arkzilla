@@ -13,6 +13,8 @@ ApplicationWindow {
 
     title: instanceName
 
+    flags: Qt.FramelessWindowHint
+
     Material.theme: arkzilla.darkTheme ? Material.Dark : Material.Light
     Material.primary: Material.Green
     Material.accent: Material.LightGreen
@@ -34,7 +36,23 @@ ApplicationWindow {
                 onClicked: stackWindow.pop()
                 visible: (stackWindow.depth > 1) ? true : false
             }
-            Item { Layout.fillWidth: true  }
+            Item {
+                Layout.fillWidth: true
+                Layout.fillHeight: true
+                MouseArea {
+                    anchors.fill: parent
+                    property variant clickPos
+                    property variant window
+                    onPressed: {
+                        clickPos = { x: arkzilla.cursorPos.x, y: arkzilla.cursorPos.y }
+                        window = { x: mainWindow.x, y: mainWindow.y }
+                    }
+                    onPositionChanged: {
+                        mainWindow.setX(window.x + arkzilla.cursorPos.x - clickPos.x)
+                        mainWindow.setY(window.y + arkzilla.cursorPos.y - clickPos.y)
+                    }
+                }
+            }
             IconButton {
                 text: ''
                 color: 'white'
@@ -44,6 +62,15 @@ ApplicationWindow {
                 ToolTip.visible: hovered
                 visible: mainWindow.title != qsTr('Settings')
                 onClicked: stackWindow.push(settingsUI)
+            }
+            IconButton {
+                text: ''
+                color: 'white'
+                ToolTip.text: qsTr('Quit')
+                ToolTip.delay: 1000
+                ToolTip.timeout: 5000
+                ToolTip.visible: hovered
+                onClicked: Qt.quit()
             }
         }
         Label {
@@ -71,4 +98,29 @@ ApplicationWindow {
     }
 
     ToastManager { id: toast  }
+
+    Label {
+        height: width
+        anchors.right: parent.right
+        anchors.bottom: parent.bottom
+        rotation: -45
+        color: Material.primary
+        font.pixelSize: 40
+        font.family: faSolid.name
+        text: ''
+        MouseArea {
+            anchors.fill: parent
+            cursorShape: Qt.SizeFDiagCursor
+            property variant clickPos
+            property variant window
+            onPressed: {
+                clickPos = { x: arkzilla.cursorPos.x, y: arkzilla.cursorPos.y }
+                window = { w: mainWindow.width, h: mainWindow.height }
+            }
+            onPositionChanged: {
+                mainWindow.setWidth(window.w + arkzilla.cursorPos.x - clickPos.x)
+                mainWindow.setHeight(window.h + arkzilla.cursorPos.y - clickPos.y)
+            }
+        }
+    }
 }

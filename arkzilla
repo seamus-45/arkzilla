@@ -9,9 +9,9 @@ import json
 import time
 import arkzilla_rc #NOQA
 
-from PyQt5.QtGui import QGuiApplication
+from PyQt5.QtGui import QGuiApplication, QCursor
 from PyQt5.QtQml import QQmlApplicationEngine
-from PyQt5.QtCore import QObject, QRunnable, QThreadPool, QSettings
+from PyQt5.QtCore import QObject, QRunnable, QThreadPool, QSettings, QPointF
 from PyQt5.QtCore import pyqtSignal, pyqtSlot, pyqtProperty
 from PyQt5.QtCore import QAbstractListModel, QSortFilterProxyModel, QModelIndex, Qt
 
@@ -670,6 +670,13 @@ class ARKZilla(QObject):
         Slot for set clipboard text
         """
         self.__clipboard.setText(text)
+
+    @pyqtProperty(QPointF)
+    def cursorPos(self):
+        """
+        Return cursor position
+        """
+        return QCursor.pos()
 
 
 class BackupModel(QAbstractListModel):

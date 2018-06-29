@@ -157,14 +157,11 @@ Pane {
 
                     FooterSection { text: qsTr('Wild Stats') }
                     FooterSection {
-                        ToolTip.visible: hovered
-                        ToolTip.timeout: 5000
-                        ToolTip.delay: 1000
-                        ToolTip.text: qsTr('Copy painting command')
                         text: qsTr(' Colors')
                         MouseArea {
                             anchors.fill: parent
                             cursorShape: Qt.PointingHandCursor
+                            hoverEnabled: true
                             onClicked: {
                                 var colors = row.colorSetIndices
                                 var cmd = ''
@@ -174,7 +171,13 @@ Pane {
                                         cmd += 'SetTargetDinoColor ' + key + ' ' + colors[key]
                                 }
                                 arkzilla.clipboardText(cmd)
-                                toast.show(qsTr('Copied to clipboard'))
+                                toast.show(cmd)
+                            }
+                            ToolTip {
+                                visible: parent.containsMouse
+                                timeout: 5000
+                                delay: 1000
+                                text: qsTr('Copy painting command')
                             }
                         }
                     }
@@ -215,18 +218,21 @@ Pane {
 
                             FooterSection {
                                 Layout.columnSpan: 2
-                                ToolTip.visible: hovered
-                                ToolTip.timeout: 5000
-                                ToolTip.delay: 1000
-                                ToolTip.text: qsTr('Copy teleport command')
                                 text: qsTr(' Location')
                                 MouseArea {
                                     anchors.fill: parent
                                     cursorShape: Qt.PointingHandCursor
+                                    hoverEnabled: true
                                     onClicked: {
                                         var cmd = 'admincheat SetPlayerPos ' + row.location.x + ' ' + row.location.y + ' ' + row.location.z
                                         arkzilla.clipboardText(cmd)
-                                        toast.show(qsTr('Copied to clipboard'))
+                                        toast.show(cmd)
+                                    }
+                                    ToolTip {
+                                        visible: parent.containsMouse
+                                        timeout: 5000
+                                        delay: 1000
+                                        text: qsTr('Copy teleport command')
                                     }
                                 }
                             }
