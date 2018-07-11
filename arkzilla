@@ -16,7 +16,7 @@ from PyQt5.QtCore import QAbstractListModel, QSortFilterProxyModel, QModelIndex,
 
 from ftplib import FTP
 from shutil import which, unpack_archive
-from requests import get
+from urllib import request
 from subprocess import run
 
 
@@ -352,24 +352,26 @@ class Client(QObject):
         """
         log('ark-tools.jar not found. begin download...')
         # Get archive name to download
-        url = None
-        r = get('https://api.github.com/repos/Qowyn/ark-tools/releases/latest', headers=USERAGENT)
-        if r.status_code == 200:
-            items = r.json()
+        download_url = None
+        req = request.Request('https://api.github.com/repos/Qowyn/ark-tools/releases/latest', headers=USERAGENT)
+        r = request.urlopen(req)
+        if r.code == 200:
+            items = json.loads(r.read().decode('utf-8'))
             for item in items['assets']:
                 if item['content_type'] == 'application/x-zip-compressed':
-                    url = item['browser_download_url']
+                    download_url = item['browser_download_url']
         else:
             return None
 
         # Download ark-tools archive
-        r = get(url, headers=USERAGENT)
-        if r.status_code == 200:
+        req = request.Request(download_url, headers=USERAGENT)
+        r = request.urlopen(req)
+        if r.code == 200:
             dir = os.path.join(self.__cwd, 'tools')
             os.makedirs(dir, exist_ok=True)
             archive = os.path.join(dir, 'ark-tools.zip')
             with open(archive, 'wb') as f:
-                f.write(r.content)
+                f.write(r.read())
             f.close()
             # Unpack and delete downloaded archive
             unpack_archive(archive, dir, format='zip')
