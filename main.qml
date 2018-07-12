@@ -12,7 +12,7 @@ ApplicationWindow {
 
     title: instanceName
 
-    flags: Qt.FramelessWindowHint
+    flags: Qt.Window | Qt.CustomizeWindowHint
 
     Material.theme: arkzilla.darkTheme ? Material.Dark : Material.Light
     Material.primary: Material.Green
@@ -98,28 +98,4 @@ ApplicationWindow {
 
     ToastManager { id: toast  }
 
-    Label {
-        height: width
-        anchors.right: parent.right
-        anchors.bottom: parent.bottom
-        rotation: -45
-        color: Material.primary
-        font.pixelSize: 40
-        font.family: faSolid.name
-        text: ''
-        MouseArea {
-            anchors.fill: parent
-            cursorShape: Qt.SizeFDiagCursor
-            property variant clickPos
-            property variant window
-            onPressed: {
-                clickPos = { x: arkzilla.cursorPos.x, y: arkzilla.cursorPos.y }
-                window = { w: mainWindow.width, h: mainWindow.height }
-            }
-            onPositionChanged: {
-                mainWindow.setWidth(window.w + arkzilla.cursorPos.x - clickPos.x)
-                mainWindow.setHeight(window.h + arkzilla.cursorPos.y - clickPos.y)
-            }
-        }
-    }
 }
