@@ -12,7 +12,7 @@ ApplicationWindow {
 
     title: instanceName
 
-    flags: Qt.Window | Qt.CustomizeWindowHint
+    flags: Qt.Window | Qt.FramelessWindowHint | Qt.WindowMinMaxButtonsHint
 
     Material.theme: arkzilla.darkTheme ? Material.Dark : Material.Light
     Material.primary: Material.Green
@@ -27,6 +27,8 @@ ApplicationWindow {
     readonly property string instanceName: arkzilla.host.length ? appName + ' (' + arkzilla.host + ')' : appName
 
     header: ToolBar {
+        opacity: active ? 1.0 : 0.5
+
         RowLayout {
             anchors.fill: parent
             IconButton {
@@ -49,6 +51,9 @@ ApplicationWindow {
                     onPositionChanged: {
                         mainWindow.setX(window.x + arkzilla.cursorPos.x - clickPos.x)
                         mainWindow.setY(window.y + arkzilla.cursorPos.y - clickPos.y)
+                    }
+                    onDoubleClicked: {
+                        mainWindow.showMinimized()
                     }
                 }
             }
@@ -98,4 +103,28 @@ ApplicationWindow {
 
     ToastManager { id: toast  }
 
+    Label {
+        height: width
+        anchors.right: parent.right
+        anchors.bottom: parent.bottom
+        rotation: -45
+        color: Material.primary
+        font.pixelSize: 40
+        font.family: faSolid.name
+        text: ''
+        MouseArea {
+            anchors.fill: parent
+            cursorShape: Qt.SizeFDiagCursor
+            property variant clickPos
+            property variant window
+            onPressed: {
+                clickPos = { x: arkzilla.cursorPos.x, y: arkzilla.cursorPos.y }
+                window = { w: mainWindow.width, h: mainWindow.height }
+            }
+            onPositionChanged: {
+                mainWindow.setWidth(window.w + arkzilla.cursorPos.x - clickPos.x)
+                mainWindow.setHeight(window.h + arkzilla.cursorPos.y - clickPos.y)
+            }
+        }
+    }
 }
