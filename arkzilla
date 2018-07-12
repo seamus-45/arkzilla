@@ -171,6 +171,13 @@ class Client(QObject):
         os.makedirs(self.__downloadPath, exist_ok=True)
         os.makedirs(self.__dataPath, exist_ok=True)
 
+    def urljoin(self, *args):
+        """
+        Join given arguments into a url. Trailing but not leading slashes are
+        stripped for each argument.
+        """
+        return '/'.join(map(lambda x: str(x).rstrip('/'), args))
+
     def testConnection(self, progress_callback, host, login, password):
         """
         Test Connection
@@ -198,7 +205,7 @@ class Client(QObject):
         ftp = FTP()
         ftp.connect(host, timeout=5)
         ftp.login(user=login, passwd=password)
-        urls = ftp.nlst(os.path.join(path, '*.ark'))
+        urls = ftp.nlst(self.urljoin(path, '*.ark'))
         ftp.close()
 
         # Return only backup name without path
@@ -264,7 +271,7 @@ class Client(QObject):
         ftp.connect(host, timeout=5)
         ftp.login(user=login, passwd=password)
         ftp.sendcmd('TYPE i')
-        url = os.path.join(path, backup)
+        url = self.urljoin(path, backup)
         filesize = ftp.size(url)
         progress = Progress(end=filesize)
         with open(os.path.join(self.__downloadPath, backup), 'wb') as f:
