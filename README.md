@@ -13,6 +13,6 @@ Useful for find dino location, watch their stats, colors, etc.
 
 ### Screenshots
 
-![Backup View](/extras/backups.png?raw=true)
+![Backup View](/extras/screenshots/backups.png?raw=true)
 
-![Creatures View](/extras/creatures.png?raw=true)
+![Creatures View](/extras/screenshots/creatures.png?raw=true)
