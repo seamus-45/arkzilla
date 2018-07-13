@@ -267,8 +267,9 @@ Pane {
         }
 
         onJavaNotFound: {
-            toast.show(qsTr('Java Runtime Environment not found. Please download and install it: ') +
-                '<a href="https://java.com/download">https://java.com/download</a>', undefined, 10000)
+            toast.show(qsTr('Java Runtime Environment not found. Please download ') +
+                '(<a href="https://java.com/download">https://java.com/download</a>)' +
+                qsTr(', install and restart ') + mainWindow.appName, undefined, 10000)
         }
     }
 }

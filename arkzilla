@@ -24,6 +24,7 @@ __VERSION__ = '0.1'
 
 COMPANY = 'ARKZilla'
 USERAGENT = {'User-Agent': COMPANY + __VERSION__}
+JAVA = 'javaw' if sys.platform.startswith('win') else 'java'
 
 
 def log(message):
@@ -342,12 +343,12 @@ class Client(QObject):
 
         # Check and download ark_data.json
         if not os.path.exists(os.path.join(self.__cwd, 'tools', 'ark_data.json')):
-            args = ['java', '-jar', tools, '--quiet', 'update-data']
+            args = [JAVA, '-jar', tools, '--quiet', 'update-data']
             run(args, check=True)
 
         # Unpack backup
         os.makedirs(backupData, exist_ok=True)
-        args = ['java', '-jar', tools, '--quiet', 'tamed', '--clean', '--write-all-fields', backup, backupData]
+        args = [JAVA, '-jar', tools, '--quiet', 'tamed', '--clean', '--write-all-fields', backup, backupData]
         r = run(args, check=True)
         # Mark data as completed
         if r.returncode == 0:
@@ -621,7 +622,7 @@ class ARKZilla(QObject):
         :param backup: Filename of backup to unpack
         """
         # Check java exists
-        if not which('java'):
+        if not which(JAVA):
             self.javaNotFound.emit()
             self.backupStateFinished.emit()
             return
