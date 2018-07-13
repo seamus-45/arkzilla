@@ -70,6 +70,7 @@ Pane {
                 placeholderText: qsTr('example.org')
                 selectByMouse: true
                 Layout.fillWidth: true
+                onActiveFocusChanged: activeFocus ? selectAll() : deselect()
             }
             Label {
                 Layout.alignment: Qt.AlignRight
@@ -82,6 +83,7 @@ Pane {
                 placeholderText: qsTr('anonymous')
                 selectByMouse: true
                 Layout.fillWidth: true
+                onActiveFocusChanged: activeFocus ? selectAll() : deselect()
             }
             Label {
                 Layout.alignment: Qt.AlignRight
@@ -96,6 +98,7 @@ Pane {
                 echoMode: TextInput.Password
                 //passwordMaskDelay: 300
                 Layout.fillWidth: true
+                onActiveFocusChanged: activeFocus ? selectAll() : deselect()
             }
             CheckBox {
                 id: storePass
@@ -115,6 +118,7 @@ Pane {
                 placeholderText: qsTr('/SavedArks')
                 selectByMouse: true
                 Layout.fillWidth: true
+                onActiveFocusChanged: activeFocus ? selectAll() : deselect()
             }
             RowLayout {
                 Layout.column: 2
@@ -173,6 +177,7 @@ Pane {
                     anchors.baseline: parent.baseline
                     text: arkzilla.toolsPath
                     placeholderText: qsTr('ark-tools.jar')
+                    onActiveFocusChanged: activeFocus ? selectAll() : deselect()
                 }
                 Button {
                     text: qsTr('Choose')
