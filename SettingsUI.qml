@@ -14,6 +14,7 @@ Pane {
         arkzilla.password = password.text
         arkzilla.remotePath = remotePath.text
         arkzilla.toolsPath = toolsPath.text
+        arkzilla.javaArgs = javaArgs.text
         arkzilla.darkTheme = darkTheme.checked
 
         arkzilla.syncLocalBackups()
@@ -159,6 +160,7 @@ Pane {
                 text: qsTr('Ark-tools')
             }
             Rectangle {
+                Layout.rowSpan: 2
                 Layout.fillHeight: true
                 width: 4
                 color: Material.accent
@@ -186,6 +188,19 @@ Pane {
                         folderDialog.open()
                     }
                 }
+            }
+            Label {
+                Layout.alignment: Qt.AlignRight
+                anchors.baseline: javaArgs.baseline
+                text: qsTr('Java Args:')
+            }
+            TextField {
+                id: javaArgs
+                text: arkzilla.javaArgs
+                placeholderText: qsTr('-Xmx1024M -XX:MaxDirectMemorySize=512m')
+                selectByMouse: true
+                Layout.fillWidth: true
+                onActiveFocusChanged: activeFocus ? selectAll() : deselect()
             }
 
             SettingsSection {

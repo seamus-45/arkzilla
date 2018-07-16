@@ -321,13 +321,14 @@ class Client(QObject):
             if percent:
                 progress_callback.emit(percent)
 
-    def unpack(self, progress_callback, backup, tools):
+    def unpack(self, progress_callback, backup, tools, javaArgs):
         """
         Unpack specified backup using ark-tools
 
         :param progress_callback: Callback function for progress
         :param backup: Filename of backup
         :param tools: Path to ark-tools
+        :param javaArgs: Additional arguments for Java
         """
         backupData = os.path.join(self.__dataPath, backup)
         backup = os.path.join(self.__downloadPath, backup)
@@ -351,6 +352,9 @@ class Client(QObject):
         # Unpack backup
         os.makedirs(backupData, exist_ok=True)
         args = [JAVA, '-jar', tools, '--quiet', 'tamed', '--clean', '--write-all-fields', backup, backupData]
+        javaArgs = javaArgs.split(' ')
+        for arg in javaArgs:
+            args.insert(1, arg)
         r = run(args, check=True)
         # Mark data as completed
         if r.returncode == 0:
@@ -528,6 +532,14 @@ class ARKZilla(QObject):
         self.__settings.setValue('darkTheme', value)
         self.themeChanged.emit()
 
+    @pyqtProperty(str, constant=True)
+    def javaArgs(self):
+        return self.__settings.value('javaArgs', '')
+
+    @javaArgs.setter
+    def javaArgs(self, value):
+        self.__settings.setValue('javaArgs', value)
+
     @pyqtSlot(str, str, str)
     def testConnection(self, host, login, password):
         """
@@ -628,7 +640,7 @@ class ARKZilla(QObject):
             self.javaNotFound.emit()
             self.backupStateFinished.emit()
             return
-        worker = Worker(self.__client.unpack, backup=backup, tools=self.toolsPath)
+        worker = Worker(self.__client.unpack, backup=backup, tools=self.toolsPath, javaArgs=self.javaArgs)
         worker.signals.error.connect(self.unpackError)
         worker.signals.finished.connect(self.backupStateFinished)
         worker.signals.result.connect(self.unpackComplete)
