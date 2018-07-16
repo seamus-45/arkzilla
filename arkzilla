@@ -534,7 +534,7 @@ class ARKZilla(QObject):
 
     @pyqtProperty(str, constant=True)
     def javaArgs(self):
-        return self.__settings.value('javaArgs', '')
+        return self.__settings.value('javaArgs', '-Xmx1024M -XX:MaxDirectMemorySize=512M')
 
     @javaArgs.setter
     def javaArgs(self, value):
