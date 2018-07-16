@@ -164,12 +164,12 @@ Pane {
                             hoverEnabled: true
                             onClicked: {
                                 var colors = row.colorSetIndices
-                                var cmd = ''
+                                var commands = Array()
                                 for (var key in colors) {
                                     if (colors[key])
-                                        cmd ? cmd += '| ' : ''
-                                        cmd += 'SetTargetDinoColor ' + key + ' ' + colors[key]
+                                        commands.push('admincheat SetTargetDinoColor ' + key + ' ' + colors[key])
                                 }
+                                var cmd = commands.join(' | ')
                                 arkzilla.clipboardText(cmd)
                                 toast.show(cmd)
                             }
