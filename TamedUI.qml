@@ -321,7 +321,7 @@ Pane {
                         }
                     }
                     onFilterTextChanged: {
-                        if (tamedView.currentIndex) { tamedView.currentIndex = -1 }
+                        if (tamedView.currentIndex > -1) { tamedView.currentIndex = -1 }
                         if (filterText.length && filterTribe.filterText.length) { filterTribe.clear() }
                         tamedModel.setFilterString(Qt.UserRole + 1, filterText)
                     }
@@ -339,7 +339,7 @@ Pane {
                         }
                     }
                     onFilterTextChanged: {
-                        if (tamedView.currentIndex) { tamedView.currentIndex = -1 }
+                        if (tamedView.currentIndex > -1) { tamedView.currentIndex = -1 }
                         if (filterText.length && filterName.filterText.length) { filterName.clear() }
                         tamedModel.setFilterString(Qt.UserRole + 3, filterText)
                     }
