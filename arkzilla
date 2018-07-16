@@ -7,6 +7,7 @@ import inspect
 import logging
 import json
 import time
+import re
 
 from PyQt5.QtGui import QGuiApplication, QCursor
 from PyQt5.QtQml import QQmlApplicationEngine
@@ -214,7 +215,7 @@ class Client(QObject):
         for url in urls:
             backup = url.split('/')[-1]
             # Only add entries with timestamps
-            if '_' in backup:
+            if re.match(r'[\D_]+[\d\._]+.ark', backup):
                 backups.append(backup)
 
         return backups
@@ -236,11 +237,12 @@ class Client(QObject):
         for backup in list(set(local + remote)):
             # Backup is already downloaded?
             islocal = self.isLocal(backup)
-            name = backup.split('_')[:1].pop()
+            # Extract name and date
+            m = re.search('([\D_]+)([\d\._]+).ark', backup)
+            name = m.group(1)[:-1]
             # Format date and time
-            dateRaw = backup[:-4].split('_', 1)[1:].pop()
             date = time.strftime('%Y.%m.%d %H:%M',
-                                 time.strptime(dateRaw, '%d.%m.%Y_%H.%M.%S'))
+                                 time.strptime(m.group(2), '%d.%m.%Y_%H.%M.%S'))
             # Append to final model
             backups.append({'local': islocal,
                             'name': name,
