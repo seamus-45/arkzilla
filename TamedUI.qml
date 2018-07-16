@@ -271,13 +271,15 @@ Pane {
             z: 2
 
             property alias levelWidth: filterLevel.width
+            property alias levelBaseWidth: filterBaseLevel.width
             property alias nameWidth: filterName.width
             property alias tribeWidth: filterTribe.width
             property alias latWidth: filterLat.width
             property alias lonWidth: filterLon.width
-            property alias tribeImplicitWidth: filterTribe.implicitWidth
-            property alias nameImplicitWidth: filterName.implicitWidth
             property alias levelImplicitWidth: filterLevel.implicitWidth
+            property alias levelBaseImplicitWidth: filterBaseLevel.implicitWidth
+            property alias nameImplicitWidth: filterName.implicitWidth
+            property alias tribeImplicitWidth: filterTribe.implicitWidth
             property alias latImplicitWidth: filterLat.implicitWidth
             property alias lonImplicitWidth: filterLon.implicitWidth
             property alias headerSpacing: buttons.spacing
@@ -288,7 +290,7 @@ Pane {
 
                 SortFilterItem {
                     id: filterLevel
-                    text: 'Level'
+                    text: qsTr('Level')
                     sort: true
                     onCheckStateChanged: {
                         if (checkState != Qt.Unchecked) {
@@ -297,10 +299,20 @@ Pane {
                     }
                 }
                 SortFilterItem {
+                    id: filterBaseLevel
+                    text: qsTr('Base')
+                    sort: true
+                    onCheckStateChanged: {
+                        if (checkState != Qt.Unchecked) {
+                            tamedModel.setSortOrder(Qt.UserRole + 4, checkState - 1)
+                        }
+                    }
+                }
+                SortFilterItem {
                     id: filterName
                     Layout.minimumWidth: implicitWidth
                     Layout.fillWidth: true
-                    text: 'Name'
+                    text: qsTr('Name')
                     sort: true
                     filter: true
                     onCheckStateChanged: {
@@ -318,7 +330,7 @@ Pane {
                     id: filterTribe
                     Layout.minimumWidth: implicitWidth
                     Layout.fillWidth: true
-                    text: 'Tribe'
+                    text: qsTr('Tribe')
                     sort: true
                     filter: true
                     onCheckStateChanged: {
@@ -334,11 +346,11 @@ Pane {
                 }
                 SortFilterItem {
                     id: filterLat
-                    text: 'Lat'
+                    text: qsTr('Lat')
                 }
                 SortFilterItem {
                     id: filterLon
-                    text: 'Lon'
+                    text: qsTr('Lon')
                 }
             }
             ButtonGroup {
@@ -366,6 +378,12 @@ Pane {
                     padding: tamedView.padding
                     text: model.level
                     onWidthChanged: { tamedView.headerItem.levelImplicitWidth = Math.max(tamedView.headerItem.levelImplicitWidth, implicitWidth) }
+                }
+                Label {
+                    width: tamedView.headerItem.levelBaseWidth
+                    padding: tamedView.padding
+                    text: model.baseLevel
+                    onWidthChanged: { tamedView.headerItem.levelBaseImplicitWidth = Math.max(tamedView.headerItem.levelBaseImplicitWidth, implicitWidth) }
                 }
                 Label {
                     width: tamedView.headerItem.nameWidth
