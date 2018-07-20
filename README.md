@@ -1,7 +1,7 @@
 ARKZilla
 ========
 
-### QML GUI for ark-tools
+### QML GUI for [ark-tools](https://github.com/Qowyn/ark-tools)
 
 Created as helper tool for [Ark Survival Evolved](http://www.playark.com/) server admins.
 
